@@ -22,5 +22,5 @@ htmlcov/
 /experiments/knowledge_resolution/
 /experiments/admission_control/holdout_v1/
 /experiments/admission_control/public_eval_*/
-/src/repo_adaptive_agents/knowledge_resolution/
+/src/adaptive_agents/knowledge_resolution/
 /tests/test_knowledge_resolution.py

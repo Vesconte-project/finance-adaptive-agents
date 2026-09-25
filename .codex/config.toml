@@ -1,6 +1,6 @@
 # Optional Codex-specific maintainer tooling for this repository.
 #
-# This is not product runtime, the canonical team-knowledge bank, or configuration required
+# This is not product runtime, the canonical team-skills bank, or configuration required
 # by product consumers, Claude, or Copilot. The registered roles are optional helpers, not a
 # mandatory maintenance workflow. AGENTS.md is the canonical cross-agent maintainer contract.
 

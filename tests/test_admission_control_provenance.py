@@ -6,7 +6,7 @@ import hashlib
 import inspect
 from pathlib import Path
 
-import repo_adaptive_agents.admission_control as native
+import adaptive_agents.admission_control as native
 
 
 VALIDATED_COMMIT = "b610f1b1232eeb2840e5cca2ddaf450ba64fa491"
@@ -19,10 +19,10 @@ INITIAL_VALIDATED_SHA256 = {
     "writer.py": "2ce1c7cc9a6e20712f9d23bc05991fc57c15a8a1f95dcfecaa1f39f9743c8f29",
 }
 PRODUCT_BOUNDARY_SHA256 = {
-    "__init__.py": "f4eae60f4911915aca71056773ee75afde45d15d7c35e1c4d0b4a19ed4808482",
+    "__init__.py": "ba402d3a318e58336871bd0df2dcda18c293b2a026b7c1d4a2577d9013cc313d",
     "admission.py": "a6f608d4a515284a89666160fede0e50d61231e0c769bbe3ee8599538fb554f5",
-    "catalog.py": "021c20524eb23527f4a7e049052ab57b938f3deb1e5c9107604ab12f050f1ad5",
-    "models.py": "b050c3a468766aaac378a90ab86a0548ead28c0c30f1d53eb8dd3b040b63ee30",
+    "catalog.py": "52fa8b2ff8ffac1d2cf372bf3ad642be549fc48f9d9c0b8ab6dcc70af07dca0f",
+    "models.py": "62ca1a33cb2bc56154ccefbd12f804a259a1872b8aa327ba9afd0802dd480fef",
     "writer.py": "2ce1c7cc9a6e20712f9d23bc05991fc57c15a8a1f95dcfecaa1f39f9743c8f29",
 }
 
@@ -53,7 +53,7 @@ def test_native_decision_callable_origins():
             f"{native.AdmissionSnapshot.record_exposure.__qualname__}"
         ),
     } == {
-        "admit": "repo_adaptive_agents.admission_control.admission.admit",
-        "validate": "repo_adaptive_agents.admission_control.admission.validate",
-        "record_exposure": "repo_adaptive_agents.admission_control.models.AdmissionSnapshot.record_exposure",
+        "admit": "adaptive_agents.admission_control.admission.admit",
+        "validate": "adaptive_agents.admission_control.admission.validate",
+        "record_exposure": "adaptive_agents.admission_control.models.AdmissionSnapshot.record_exposure",
     }

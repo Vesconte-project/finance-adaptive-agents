@@ -7,7 +7,7 @@ Status: accepted product direction; v0.1 implementation pending.
 Use this separation:
 
 ```text
-shared knowledge -> model/retrieval selects relevance -> native validation
+shared Skills -> model/retrieval selects relevance -> native validation
 ```
 
 Run native admission before retrieval only when an inadmissible resource must
@@ -35,4 +35,3 @@ The extracted native package is a validated starting primitive, not proof of
 the v0.1 product hypothesis. It does not derive authoritative facts, discover
 semantic conflicts, distribute or sign catalogs, or measure whether engineers
 will contribute and reuse knowledge.
-

@@ -6,10 +6,10 @@ Work only inside this repository unless the user explicitly authorizes another p
 
 ## Product direction
 
-This repository provides shared team knowledge for coding agents. Its current architecture is:
+This repository provides shared team skills for coding agents. Its current architecture is:
 
 ```text
-canonical Git-backed team knowledge
+canonical Git-backed team skills
         ↓
 portable standard Agent Skills
         ↓
@@ -24,9 +24,9 @@ vendor-independent repository knowledge selection
 derived local Agent Skills
 ```
 
-`team-knowledge/` is the canonical, team-owned Skill bank for the current trial. Canonical
+`team-skills/` is the canonical, team-owned Skill bank for the current trial. Canonical
 knowledge is stored as portable standard Agent Skills, not as vendor-specific copies. See
-`README.md` and `docs/CROSS_REPOSITORY_TEAM_KNOWLEDGE.md` for the current user workflow and
+`README.md` and `docs/CROSS_REPOSITORY_TEAM_SKILLS.md` for the current user workflow and
 detailed behavior.
 
 ## Architectural contract
@@ -45,7 +45,7 @@ detailed behavior.
 - `.agents/skills/<name>/` contains generated physical Skill packages used by supported
   consumers. `.claude/skills/<name>` is a generated discovery bridge to the same package.
   Generated packages, bridges, caches, events, and runtime state are derived and disposable.
-- `.team-knowledge/config.json` and `.team-knowledge/lock.json` are the durable committed
+- `.team-skills/config.json` and `.team-skills/lock.json` are the durable committed
   consumer state. Local materialization must remain safely reconstructible from their
   committed provenance and the canonical source.
 - Central Skill changes and explicit revocations propagate through sync. Preserve integrity,

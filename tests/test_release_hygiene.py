@@ -3,8 +3,8 @@ from __future__ import annotations
 import tomllib
 from pathlib import Path
 
-from repo_adaptive_agents import __version__
-from repo_adaptive_agents.shared_knowledge.canonical import load_canonical_catalog
+from adaptive_agents import __version__
+from adaptive_agents.team_skills.canonical import load_canonical_catalog
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -13,10 +13,11 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_distribution_version_and_product_metadata_are_consistent():
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
 
-    assert project["version"] == __version__ == "0.20.4"
+    assert project["name"] == "adaptive-agents"
+    assert project["version"] == __version__ == "0.22.1"
     assert project["readme"] == "README.md"
-    assert project["scripts"]["team-knowledge"] == (
-        "repo_adaptive_agents.shared_knowledge.cli:main"
+    assert project["scripts"]["team-skills"] == (
+        "adaptive_agents.team_skills.cli:main"
     )
 
 
@@ -24,13 +25,13 @@ def test_bundled_agent_skills_are_declared_as_wheel_package_data():
     configuration = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 
     assert configuration["tool"]["setuptools"]["package-data"][
-        "repo_adaptive_agents.shared_knowledge"
+        "adaptive_agents.team_skills"
     ] == ["skill_template/*/SKILL.md"]
 
 
 def test_canonical_skill_catalog_is_safe_and_portable():
     catalog = load_canonical_catalog(
-        ROOT / "team-knowledge",
+        ROOT / "team-skills",
         "test-source-commit",
         lambda _path: "test-skill-revision",
     )
@@ -42,6 +43,8 @@ def test_canonical_skill_catalog_is_safe_and_portable():
         ("lets-encrypt-dns01-octodns-renewal", "lets-encrypt-dns01-octodns-renewal", "active"),
     ]
     skills = {skill.name: skill for skill in catalog.skills}
+    assert catalog.descriptor.organization == ""
+    assert catalog.descriptor.organization_default_skill_ids == ()
     renewal = skills["lets-encrypt-dns01-octodns-renewal"]
     assert "Let's Encrypt" in renewal.description
     assert "private key" in renewal.skill_text.lower()
@@ -55,7 +58,7 @@ def test_canonical_skill_catalog_is_safe_and_portable():
     assert "research-and-refresh.md" in authoring.skill_text
     authoring_contract = (
         ROOT
-        / "team-knowledge/skills/canonical-team-skill-authoring/references/evidence-and-lifecycle.md"
+        / "team-skills/skills/canonical-team-skill-authoring/references/evidence-and-lifecycle.md"
     ).read_text(encoding="utf-8")
     assert "schema_version" in authoring_contract
     assert "package digest" in authoring_contract

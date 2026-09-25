@@ -7,8 +7,8 @@ from datetime import datetime, timezone
 
 import pytest
 
-import repo_adaptive_agents.admission_control as native
-from repo_adaptive_agents.admission_control.writer import AuditWriteError, write_audit_bundle
+import adaptive_agents.admission_control as native
+from adaptive_agents.admission_control.writer import AuditWriteError, write_audit_bundle
 
 
 NOW = datetime(2026, 9, 1, 12, 0, tzinfo=timezone.utc)
@@ -31,8 +31,8 @@ def _context(
 def _payload(kind):
     if kind == native.ResourceKind.AGENT_SKILL:
         return native.SkillPayload(("codex",), "SKILL.md")
-    if kind == native.ResourceKind.SHARED_KNOWLEDGE:
-        return native.SharedKnowledgePayload(".team-knowledge/items/note.md")
+    if kind == native.ResourceKind.TEAM_SKILLS:
+        return native.TeamSkillsPayload(".team-skills/items/note.md")
     if kind == native.ResourceKind.REPOSITORY_INSTRUCTION:
         return native.RepositoryInstructionPayload("AGENTS.md")
     if kind in {native.ResourceKind.MCP_TOOL, native.ResourceKind.MCP_RESOURCE}:

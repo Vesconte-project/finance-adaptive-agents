@@ -10,13 +10,13 @@ Claude does not require the teammate to consume them with Claude, for example.
 
 ## Prerequisites
 
-- Install `team-knowledge` using the instructions in `README.md`.
+- Install `team-skills` using the instructions in `README.md`.
 - Use a real repository, or a disposable clone of one. Repository evidence drives selection,
   so an empty `git init` is not representative.
 - Have at least one supported selector CLI installed and authenticated: Codex, Claude, or
   Copilot.
-- Ensure Git can access the configured canonical source. The current default uses the
-  `repo-adaptive-agents` Git repository over SSH.
+- Ensure Git can access the configured canonical source. The current default uses the private
+  `adaptive-agents` Git repository over HTTPS.
 - Ensure the reviewed canonical Skill is appropriate for the repository and operator. The
   bundled catalog currently includes the `lets-encrypt-dns01-octodns-renewal` operational
   Skill; it is relevant only where the required getssl, DNS, and authorization preconditions
@@ -27,11 +27,11 @@ Claude does not require the teammate to consume them with Claude, for example.
 From the repository you want to equip, run:
 
 ```sh
-team-knowledge prepare
+team-skills prepare
 ```
 
 On first use, choose the default selector from the detected CLIs. Later, an explicit `--selector`
-takes precedence over `TEAM_KNOWLEDGE_SELECTOR`. Preparation fetches the canonical source,
+takes precedence over `TEAM_SKILLS_SELECTOR`. Preparation fetches the canonical source,
 collects factual repository evidence, runs semantic selection, performs native validation,
 and prints a proposed plan. In an interactive terminal, choose whether to recommend Skills from
 the repository as it exists or describe work you intend to add. If you continue that conversation,
@@ -49,17 +49,17 @@ Before applying it, ask:
 An empty selection can be correct for an unrelated repository. Record it as an observation;
 do not repeatedly rerun selection until something appears.
 
-Answer the interactive `Apply? [y/N]` prompt only after reviewing the plan. Declining leaves
-committed and materialized team-knowledge state unchanged.
+Choose the interactive recommendation only after reviewing the plan. Declining leaves committed
+and materialized team-skills state unchanged.
 
 ## Inspect durable and generated state
 
 After applying the plan, these files are durable repository state and should be reviewed:
 
 ```text
-.team-knowledge/config.json
-.team-knowledge/lock.json
-.team-knowledge/.gitignore
+.team-skills/config.json
+.team-skills/lock.json
+.team-skills/.gitignore
 ```
 
 These paths are local, generated state:
@@ -67,23 +67,23 @@ These paths are local, generated state:
 ```text
 .agents/skills/<managed-name>/
 .claude/skills/<managed-name>
-.team-knowledge/runtime/
+.team-skills/runtime/
 ```
 
 The canonical Git clone is not stored in the consumer repository. It is a persistent replica shared
-between consumers (normally `~/.local/share/team-knowledge/sources/` on Linux/WSL). If setup runs
-inside the default canonical clone, that checkout is registered and reused. `team-knowledge setup`
+between consumers (normally `~/.local/share/team-skills/sources/` on Linux/WSL). If setup runs
+inside the default canonical clone, that checkout is registered and reused. `team-skills setup`
 prints the effective replica location.
 
 Each selected standard Skill exists physically once under `.agents/skills/`. The Claude path
 is a generated discovery bridge to that same package. Do not commit generated Skill packages,
 Claude bridges, canonical replicas, or runtime state.
 
-## Commit repository knowledge state
+## Commit repository Skills state
 
 ```sh
-git add .team-knowledge/config.json .team-knowledge/lock.json .team-knowledge/.gitignore
-git commit -m "Bootstrap shared team knowledge"
+git add .team-skills/config.json .team-skills/lock.json .team-skills/.gitignore
+git commit -m "Bootstrap shared team skills"
 ```
 
 ## Use your normal coding agent
@@ -106,7 +106,7 @@ promise a provider-independent disclosure format.
 When the pilot operator announces a canonical Skill change or revocation, run:
 
 ```sh
-team-knowledge sync --selector <codex|claude|copilot>
+team-skills sync --selector <codex|claude|copilot>
 ```
 
 Review the plan and choose whether to apply it. Content updates to selected Skills propagate
@@ -114,5 +114,5 @@ through sync, while explicit revocation removes managed exposure. New Skills, ro
 or changed repository evidence may require semantic reassessment. Changing only the selector
 choice does not force reassessment.
 
-See `docs/CROSS_REPOSITORY_TEAM_KNOWLEDGE.md` for detailed source, validation, state, and sync
+See `docs/CROSS_REPOSITORY_TEAM_SKILLS.md` for detailed source, validation, state, and sync
 semantics.

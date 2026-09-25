@@ -1,14 +1,14 @@
-# Cross-repository team-knowledge pilot
+# Cross-repository team-skills pilot
 
 ## Pilot question
 
-Can real team knowledge be authored once, automatically assembled into the repositories where
+Can real team skills be authored once, automatically assembled into the repositories where
 it is useful, and consumed by teammates regardless of whether they use Codex, Claude, or
 Copilot?
 
 ## Before inviting the team
 
-Prepare and review a small real canonical corpus under `team-knowledge/skills/` through
+Prepare and review a small real canonical corpus under `team-skills/skills/` through
 ordinary Git review. The catalog starts with `lets-encrypt-dns01-octodns-renewal`; it is an
 operational Skill and must be trialled only with authorized participants in repositories where
 the documented preconditions genuinely exist.
@@ -31,8 +31,8 @@ Additional real Skills are useful, but no arbitrary item count is required. Befo
 - review canonical Skill content for secrets, personal data, and restricted information;
 - confirm participants can install the tool;
 - confirm each participant's chosen selector is installed and authenticated;
-- verify their Git environment can access the canonical source, currently the
-  `repo-adaptive-agents` repository over SSH; and
+- verify their Git environment can access the private canonical source, currently the
+  `adaptive-agents` repository over HTTPS; and
 - when testing Claude consumption, verify the local filesystem supports the required relative
   directory-symlink bridge.
 
@@ -56,7 +56,7 @@ first real Copilot participant carefully.
 bootstrap with an available selector
 → inspect the proposed plan
 → apply it if appropriate
-→ commit only .team-knowledge durable state
+→ commit only .team-skills durable state
 → use a normal coding agent
 → sync when the operator announces a central change
 ```
@@ -78,7 +78,7 @@ Record lightweight qualitative outcomes:
 - whether switching consumer agents caused confusion; and
 - any manual copying or installation the teammate believed was necessary.
 
-Do not use `.team-knowledge/events.jsonl` as the core pilot success metric, and do not require
+Do not use `.team-skills/events.jsonl` as the core pilot success metric, and do not require
 repository-local feedback commands.
 
 ## Lifecycle checks
@@ -156,5 +156,5 @@ experience.
 
 The primary qualitative success statement is:
 
-> Real team knowledge written once is made available in the repositories where it is useful,
+> Real team skills written once is made available in the repositories where it is useful,
 > and can be used regardless of whether the developer works with Codex, Claude, or Copilot.

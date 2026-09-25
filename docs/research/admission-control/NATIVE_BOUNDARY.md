@@ -23,9 +23,9 @@ derive authoritative facts.
 The initial extraction is protected by source-hash and callable-origin tests.
 Future product changes may evolve it, but must do so after this known baseline.
 
-## Product evolution: generic shared knowledge
+## Product evolution: generic shared Skills
 
-On 2026-09-02 the product added `SHARED_KNOWLEDGE` and `SharedKnowledgePayload` because
+On 2026-09-02 the product added `TEAM_SKILLS` and `TeamSkillsPayload` because
 generic reusable Markdown is not a repository instruction. This is a content-category and
 payload-only extension. The native admission and validation algorithms are unchanged.
 
