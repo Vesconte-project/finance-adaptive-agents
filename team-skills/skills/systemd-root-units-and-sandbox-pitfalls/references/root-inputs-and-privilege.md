@@ -2,17 +2,25 @@
 
 ## Root execution inputs (verified)
 
-- A root unit executing a script under a home directory is a local privilege escalation even if
-  the script itself is `root:root`: any writable ancestor lets the owner replace the file.
-  Install root-executed code to a root-owned path (for example under `/usr/local/libexec/`),
-  `0755`, with every ancestor root-owned.
+- A root unit executing a script under a home directory is usually a local privilege escalation
+  even if the script itself is `root:root`. Whoever can write the script's directory can rename
+  it away and put their own file in its place — unless the directory is sticky (`+t`), where
+  only the entry's owner may rename it. Whoever can write a higher ancestor can rename the whole
+  subtree and substitute their own. Symlinks move the question to their targets: assess the
+  resolved path (`namei -l <path>` lists owner and mode of every component, including links)
+  and each link itself. Install root-executed code to a root-owned path (for example under
+  `/usr/local/libexec/`), `0755`, with every ancestor root-owned and no links through
+  user-writable locations.
 - An `EnvironmentFile` that selects the interpreter, the checker, or a root-written log path is
   an execution input. Keep it `root:root 0600` in a root-owned directory.
 - If a root job must run untrusted helper code (for example a check that lives in a working
   tree), drop privilege explicitly for that step (`runuser --user <account> -- …`) instead of
   letting it inherit root.
-- Prove the fix by attempting the write as the unprivileged account (append-open the file,
-  create a file in its directory) and observing `Permission denied`, not by reading modes.
+- Prove the fix as the unprivileged account, without touching the real file: for the file and
+  for every directory on the resolved path, attempt the operations that would allow
+  replacement — append-open the file, and create and remove a scratch entry in each directory
+  (for a sticky directory, also check who owns the entry in it). Expect `Permission denied`
+  every time; reading modes is not proof.
 
 ## Root steps inside a sandboxed unit (verified)
 
@@ -38,11 +46,18 @@ give it `RemainAfterExit=yes` and read its invocation ID and journal before remo
 
 ## Secrets on the command line (verified)
 
-A token passed as an argument in `ExecStart` (for example `--token <value>`) is readable by every
-local user through `ps` and the process table, and usually also sits in a world-readable unit
-file. Move it to a root-owned `0600` `EnvironmentFile`, a token file option if the program has
-one, or systemd credentials (`LoadCredential=`), then rotate it, because it has already been
-exposed. These are not equivalent: an `EnvironmentFile` keeps the value off the command line but
+Treat a secret in `ExecStart` (for example `--token <value>`) as unsafe by default. Two separate
+exposures:
+
+- **Process arguments.** With default procfs settings any local user can read them through `ps`
+  or `/proc/<pid>/cmdline`; a `hidepid=` mount option restricts that. Check the host rather than
+  assuming either way.
+- **The unit file.** Unit files are usually world-readable, so the value is exposed to every
+  local account regardless of procfs.
+
+Move it to a root-owned `0600` `EnvironmentFile`, a token file option if the program has one, or
+systemd credentials (`LoadCredential=`). Rotate it if either exposure applied to any account or
+process that should not hold it, or if you cannot tell — which is the usual case. These are not equivalent: an `EnvironmentFile` keeps the value off the command line but
 places it in the process environment, readable by the same user and root through `/proc`;
 credentials are delivered as files readable only by the service's user and root.
 

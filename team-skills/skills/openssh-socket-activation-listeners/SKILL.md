@@ -37,10 +37,17 @@ Consequences:
 ## Which configuration value wins (verified)
 
 In `sshd_config`, **the first obtained value for a keyword wins** — the opposite of many
-configuration systems and of systemd `EnvironmentFile` stacking. Drop-ins in
-`sshd_config.d/` are read in lexical order, so `00-hardening.conf` beats a later
-`50-cloud-init.conf` that sets `PasswordAuthentication yes`. Rely on `sshd -T` (run as root) for
-the effective authentication settings, not on reading one file.
+configuration systems and of systemd `EnvironmentFile` stacking. Drop-in files count only where
+an `Include` line pulls them in, and they are read at that point, in lexical order. On a host
+whose main file starts with `Include /etc/ssh/sshd_config.d/*.conf` (as on the one observed),
+`00-hardening.conf` beats a later `50-cloud-init.conf` that sets `PasswordAuthentication yes`,
+and both beat the main file's own lines after the `Include`. Check where your `Include` sits and
+which files it matches before reasoning about order.
+
+Prefer the effective configuration to reading files: `sshd -T` prints it, but needs root to load
+host keys, so run it only where you are authorised or ask someone who is. It shows the global
+settings; for a `Match` block, pass the connection context, for example
+`sshd -T -C user=<name>,host=<host>,addr=<ip>`.
 
 ## Before disabling password authentication
 

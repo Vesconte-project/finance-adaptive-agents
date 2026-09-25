@@ -46,9 +46,19 @@ SuccessExitStatus=75
 
 and use a *different* code for the outcome that must still fail (illustration: 76 for "expired").
 Choose codes and caller behaviour for your own service.
-Then check each caller: a client using `check=True`, a shell with `set -e`, and a CI step will
-all treat the code as failure unless they are changed too. A job shown red for a legitimate
-deferral also stops later steps in the same script from running.
+
+Then check each caller, because they see different things:
+
+- **Callers that run the program directly** — a script, `subprocess.run(..., check=True)`, a
+  shell with `set -e`, a CI step invoking the binary — receive the raw exit code.
+  `SuccessExitStatus=` does not affect them; each needs its own handling.
+- **Callers that observe the unit** — `systemctl start` on a oneshot, `systemctl is-failed`,
+  `OnFailure=`, dependent units, monitoring of the unit state — see systemd's verdict, which
+  `SuccessExitStatus=` changes. Something that waits on the unit and returns its own status
+  (for example `systemd-run --wait`) may pass the raw code through; confirm on your version.
+
+A job shown red for a legitimate deferral also stops later steps in the same script from
+running.
 
 ## Transient oneshot units lose their identity (verified)
 
