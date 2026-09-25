@@ -38,9 +38,18 @@ def test_canonical_skill_catalog_is_safe_and_portable():
 
     assert [(skill.id, skill.name, skill.state) for skill in catalog.skills] == [
         ("canonical-team-skill-authoring", "canonical-team-skill-authoring", "active"),
+        ("cloudflare-r2-backups-and-bucket-lock", "cloudflare-r2-backups-and-bucket-lock", "active"),
         ("dify-workflow-operations", "dify-workflow-operations", "active"),
+        ("finance-production-release-channel", "finance-production-release-channel", "active"),
+        ("healthchecks-io-job-alerting", "healthchecks-io-job-alerting", "active"),
         ("jira-data-center-operations", "jira-data-center-operations", "active"),
         ("lets-encrypt-dns01-octodns-renewal", "lets-encrypt-dns01-octodns-renewal", "active"),
+        ("prefect-self-hosted-operations", "prefect-self-hosted-operations", "active"),
+        (
+            "systemd-root-units-and-sandbox-pitfalls",
+            "systemd-root-units-and-sandbox-pitfalls",
+            "active",
+        ),
     ]
     skills = {skill.name: skill for skill in catalog.skills}
     assert catalog.descriptor.organization == ""

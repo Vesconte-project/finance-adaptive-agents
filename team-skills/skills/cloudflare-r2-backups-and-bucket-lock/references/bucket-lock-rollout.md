@@ -1,0 +1,43 @@
+# Bucket Lock rollout, change, and removal
+
+## Before creating a real rule
+
+1. **Prove the semantics you depend on with a disposable prefix.** Create a short rule over an
+   empty throwaway prefix, write a probe object *while the rule is active*, confirm overwrite and
+   delete return 409, remove the rule, confirm the delete now succeeds, and confirm absence by
+   listing. For age semantics, keep a probe older than the rule duration and check whether it is
+   deletable under a newly created rule.
+2. **Read every rule back in the dashboard** after creating or removing it — exact prefix
+   (including trailing slash) and duration. In one rollout a rule reported as created did not
+   exist; every test passed against no rule and produced the right answer for the wrong reason.
+3. **Inventory the target prefix completely** and confirm the listing actually succeeded.
+   Remove partial uploads, test markers and orphans *before* an indefinite rule; afterwards they
+   are permanent.
+4. **Choose the duration against the recovery cycle, not by default.** If the rule must outlive
+   one full restore-test cycle, compute the worst-case gap between restore tests (for "first
+   Sunday of the month" it is 35 days) and add margin; a retention equal to the gap gives zero
+   overlap between "validated by a restore" and "still locked".
+5. **State the posture explicitly:** "we can always restore to something recent" (what a rolling
+   rule gives) versus "we can restore to any point in the last N months" (which it never gives).
+
+## Validation after activation
+
+- Probe overwrite and delete on a disposable object inside each protected prefix; expect 409.
+- The first scheduled backup after activation is the real proof that the rule does not break
+  production: verify its object, size, `LastModified`, and checksum read-back.
+
+## Urgent deletion under retention (erasure requests, leaked secret in a dump)
+
+Two paths with different costs:
+
+- **Wait for expiry** — longer retention means a longer wait.
+- **Remove the rule, delete, recreate** — the unprotected window lasts only as long as the
+  operation, but the whole prefix is exposed during it. List the prefix immediately before
+  removal and immediately after recreation, and compare: only the authorised deletions may
+  differ. Without that comparison the window is not just exposed, it is unaudited.
+
+## Recovery tooling
+
+Protected prefixes may contain loose objects (probes, markers) that can never be removed. Any
+restore tool must be driven by manifests and ignore loose objects at the prefix root; it must not
+assume every object belongs to a complete set.
