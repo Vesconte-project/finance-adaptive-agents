@@ -44,10 +44,16 @@ def test_canonical_skill_catalog_is_safe_and_portable():
         ("healthchecks-io-job-alerting", "healthchecks-io-job-alerting", "active"),
         ("jira-data-center-operations", "jira-data-center-operations", "active"),
         ("lets-encrypt-dns01-octodns-renewal", "lets-encrypt-dns01-octodns-renewal", "active"),
+        ("openssh-socket-activation-listeners", "openssh-socket-activation-listeners", "active"),
         ("prefect-self-hosted-operations", "prefect-self-hosted-operations", "active"),
         (
             "systemd-root-units-and-sandbox-pitfalls",
             "systemd-root-units-and-sandbox-pitfalls",
+            "active",
+        ),
+        (
+            "systemd-service-exit-and-oom-semantics",
+            "systemd-service-exit-and-oom-semantics",
             "active",
         ),
     ]

@@ -1,4 +1,18 @@
-# Memory limits, exit codes, and transient units
+---
+name: systemd-service-exit-and-oom-semantics
+description: Use when a systemd service that spawns job processes is stopped by an OOM kill, when choosing MemoryMax or OOMPolicy for such a worker, when adding an exit code that must not count as a failure to a unit and its callers, or when a verifier loses a transient systemd-run oneshot unit. Not for writing ordinary units or for tuning application memory use.
+---
+
+# systemd service exit and OOM semantics
+
+How systemd decides a service failed, and what that does to its callers — behaviour that looked
+correct on review and was wrong in practice. It complements `systemd.service(5)` and
+`systemd.resource-control(5)`. This Skill does not grant root; unit changes follow the host's own
+authorisation.
+
+**Evidence scope.** One Ubuntu host with systemd, 2026-09. *Verified* means reproduced there, not
+on every distribution or systemd version. Reproduce the behaviour on your own host before relying
+on it.
 
 ## OOM kills the whole unit by default (verified on one host)
 

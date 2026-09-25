@@ -74,11 +74,15 @@ For a rule rollout, change, or removal, read
 
 ## Authorization gate
 
-Creating an indefinite rule, extending a duration, removing a rule, and the "remove, delete,
-recreate" path each either make data permanently undeletable or expose a whole prefix. Before
-any of them, obtain explicit confirmation from the bucket or account owner for that specific
-change — holding dashboard access is not approval — and record it next to the before/after
-prefix listings. Without it, prepare the change and stop.
+Every Bucket Lock rule creation, change, or removal on a bucket that holds real data needs
+explicit confirmation from the bucket or account owner for that specific change — holding
+dashboard access is not approval — recorded next to the before/after prefix listings. This
+matters most for indefinite rules, extended durations, removals, and the "remove, delete,
+recreate" path, which make data permanently undeletable or expose a whole prefix.
+
+The only exception is a probe: a throwaway prefix in a bucket or account where the operator is
+already authorized to change rules, holding nothing but probe objects. Without confirmation,
+prepare the change and stop.
 
 ## Stop conditions
 

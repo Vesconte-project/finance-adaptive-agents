@@ -1,13 +1,15 @@
 # Bucket Lock rollout, change, and removal
 
-Every step below that creates an indefinite rule, extends a duration, or removes a rule requires
-the bucket or account owner's explicit confirmation for that change, recorded with the
-before/after prefix listings (see the authorization gate in SKILL.md). Probes on a disposable
-prefix are the exception.
+Every rule creation, change, or removal on a bucket holding real data requires the bucket or
+account owner's explicit confirmation for that change, recorded with the before/after prefix
+listings (see the authorization gate in SKILL.md). The only exception is a probe on a throwaway
+prefix where the operator is already authorized to change rules and nothing but probe objects
+is stored.
 
 ## Before creating a real rule
 
-1. **Prove the semantics you depend on with a disposable prefix.** Create a short rule over an
+1. **Prove the semantics you depend on with a disposable prefix** (where you are authorized to
+   change rules). Create a short rule over an
    empty throwaway prefix, write a probe object *while the rule is active*, confirm overwrite and
    delete return 409, remove the rule, confirm the delete now succeeds, and confirm absence by
    listing. For age semantics, keep a probe older than the rule duration and check whether it is

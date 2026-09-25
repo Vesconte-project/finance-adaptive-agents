@@ -16,22 +16,35 @@
 
 ## Root steps inside a sandboxed unit (verified)
 
-The `!` prefix on `ExecStart*` runs that command with elevated credentials while the unit's
-other sandboxing (`ProtectSystem=`, `ProtectHome=`, `ReadWritePaths=`, `NoNewPrivileges=`) still
-applies; `+` would drop the sandbox too. Do not accept this by doctrine: have the root phase print
+The two prefixes bypass different things; check `systemd.service(5)` for your systemd version:
+
+- `!` bypasses only the credential changes (`User=`, `Group=`, `SupplementaryGroups=`), so the
+  command runs as root while the unit's other sandboxing — filesystem protection, namespaces,
+  capability bounds — still applies.
+- `+` runs the command with full privileges: it is not subject to `User=`/`Group=`,
+  `CapabilityBoundingSet=`, or the filesystem-namespacing options (`ProtectSystem=`,
+  `PrivateTmp=`, …). It does not drop every unit setting (cgroup and resource settings, for
+  example, still apply), and it affects only that command line.
+
+Choose `!` when the root step should stay inside the sandbox. Do not accept either by doctrine:
+have the root phase print
 something like `phase=<name> euid=0 inputs=<n> values=<m>` and make the verification require
 that exact line from that invocation's journal. A root phase that silently fails to read its
 inputs is indistinguishable from one that found nothing.
 
 To test a unit's sandbox without touching the real unit, start a transient probe unit with the
-same directives — but see the transient-unit caveat in the next reference.
+same directives. A transient `Type=oneshot` unit is unloaded as soon as it becomes inactive, so
+give it `RemainAfterExit=yes` and read its invocation ID and journal before removing it.
 
 ## Secrets on the command line (verified)
 
 A token passed as an argument in `ExecStart` (for example `--token <value>`) is readable by every
 local user through `ps` and the process table, and usually also sits in a world-readable unit
 file. Move it to a root-owned `0600` `EnvironmentFile`, a token file option if the program has
-one, or systemd credentials; then rotate it, because it has already been exposed.
+one, or systemd credentials (`LoadCredential=`), then rotate it, because it has already been
+exposed. These are not equivalent: an `EnvironmentFile` keeps the value off the command line but
+places it in the process environment, readable by the same user and root through `/proc`;
+credentials are delivered as files readable only by the service's user and root.
 
 ## Group membership that is root in disguise
 

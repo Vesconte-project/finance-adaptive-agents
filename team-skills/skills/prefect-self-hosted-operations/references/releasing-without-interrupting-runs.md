@@ -2,15 +2,19 @@
 
 ## Readiness after a worker restart
 
-"Worker `ONLINE`" can be a stale record from before the restart. Require the exact worker name to
-report a `last_heartbeat_time` **later than the moment activation began**. Only that proves the
-new process connected.
+"Worker `ONLINE`" can be a stale record from before the restart, and so can a heartbeat: the old
+process may heartbeat after activation begins but before it is stopped. Tie the evidence to the
+restart itself — record the time the service manager reports the new process started (and its
+PID), then require the exact worker name to report a `last_heartbeat_time` **later than that
+start**. Only that proves the new process connected.
 
 ## Which runs a restart affects
 
 - Restarting a worker kills the flow processes it runs.
-- Restarting the Prefect **server** affects every pool, so a server release must wait for a free
-  window in all pools, not just one.
+- Restarting the Prefect **server** takes the API away from every pool: running flows cannot
+  report state or logs, and workers cannot submit scheduled runs. Whether an active flow process
+  survives that depends on the deployment, so treat it as a control-plane availability risk and
+  wait for a free window in all pools, not just one.
 
 ## A window gate instead of a blind restart
 

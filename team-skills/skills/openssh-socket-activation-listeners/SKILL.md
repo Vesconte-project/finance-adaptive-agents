@@ -1,4 +1,16 @@
-# SSH under socket activation
+---
+name: openssh-socket-activation-listeners
+description: Use when checking or restricting which addresses OpenSSH listens on under systemd socket activation (ssh.socket), when sshd -T and the real listener disagree, or when deciding which sshd_config or sshd_config.d value takes effect before hardening authentication. Not for SSH client configuration or key generation.
+---
+
+# OpenSSH under socket activation
+
+Practice learned hardening remote access on a host where OpenSSH runs by socket activation. It
+does not grant root or authorise changing a host's remote access; keep an existing session open
+and follow the host's own authorisation for any change.
+
+**Evidence scope.** One Ubuntu host with socket-activated OpenSSH, 2026-09. Confirm the behaviour
+on your release before relying on it.
 
 ## Where SSH actually listens (verified)
 
