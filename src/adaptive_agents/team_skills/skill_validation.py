@@ -28,6 +28,7 @@ class SkillCandidate:
     description: str
     files: tuple[tuple[str, bytes], ...]
     digest_sha256: str
+    organization_scope: str | None = None
 
 
 @dataclass(frozen=True)
@@ -85,7 +86,7 @@ def _frontmatter(text: str) -> tuple[str, str]:
     return values["name"], values["description"]
 
 
-def load_candidate(path: Path) -> SkillCandidate:
+def load_candidate(path: Path, *, organization_scope: str | None = None) -> SkillCandidate:
     """Load one materializable package, allowing a derived .agents copy without its sidecar."""
     if path.is_symlink() or not path.is_dir():
         raise TeamSkillsError(f"candidate Skill path is missing or unsafe: {path}")
@@ -125,7 +126,14 @@ def load_candidate(path: Path) -> SkillCandidate:
         raise TeamSkillsError(f"candidate Skill is missing SKILL.md: {path}")
     name, description = _frontmatter(values["SKILL.md"].decode("utf-8"))
     normalized = tuple(files)
-    return SkillCandidate(path, name, description, normalized, package_digest(normalized))
+    return SkillCandidate(
+        path,
+        name,
+        description,
+        normalized,
+        package_digest(normalized),
+        organization_scope,
+    )
 
 
 def _changed_paths(baseline: CanonicalSkill, candidate: SkillCandidate) -> tuple[str, ...]:

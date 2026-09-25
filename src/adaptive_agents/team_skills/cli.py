@@ -1428,7 +1428,13 @@ def _run(args: argparse.Namespace) -> int:
             if report.passed:
                 print(f"[team-skills] Starting isolated {evaluator} assessment for this candidate only...", flush=True)
                 _print_skill_assessment(
-                    assess_candidate(evaluator, load_candidate(candidate_path)),
+                    assess_candidate(
+                        evaluator,
+                        load_candidate(
+                            candidate_path,
+                            organization_scope=skill.organization_scope,
+                        ),
+                    ),
                     candidate_changed=bool(report.changed_paths),
                 )
         print("No Skill files were changed or published.")

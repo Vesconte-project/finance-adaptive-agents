@@ -44,3 +44,9 @@ def repository_identity(root: Path) -> str:
     if parts:
         parts[-1] = parts[-1].removesuffix(".git")
     return "/".join(parts[-2:]) if len(parts) >= 2 else (parts[0] if parts else root.name)
+
+
+def repository_organization(repository_id: str) -> str | None:
+    """Return the owner component of an owner/repository identity, if present."""
+    owner, separator, _name = repository_id.partition("/")
+    return owner if separator and owner else None

@@ -1,6 +1,12 @@
 {
   "schema_version": 2,
   "source_id": "adaptive-agents",
-  "organization": "",
-  "team": "engineering"
+  "organization": "Vesconte-project",
+  "team": "engineering",
+  "organization_default_skill_ids": [
+    "finance-production-release-channel"
+  ],
+  "organization_only_skill_ids": [
+    "finance-production-release-channel"
+  ]
 }

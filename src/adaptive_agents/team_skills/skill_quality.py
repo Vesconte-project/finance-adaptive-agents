@@ -51,6 +51,11 @@ def _candidate_payload(candidate: SkillCandidate) -> dict[str, object]:
         "path_label": candidate.path.name,
         "name": candidate.name,
         "description": candidate.description,
+        "intended_audience": (
+            f"organization-only for {candidate.organization_scope}"
+            if candidate.organization_scope
+            else "shared catalog"
+        ),
         "files": [
             {"path": path, "content": content.decode("utf-8")}
             for path, content in candidate.files
@@ -60,12 +65,19 @@ def _candidate_payload(candidate: SkillCandidate) -> dict[str, object]:
 
 def assessment_prompt(candidate: SkillCandidate) -> str:
     payload = {"schema_version": 1, "candidate": _candidate_payload(candidate)}
+    scope_instruction = (
+        f"Assess suitability for the declared organization-only audience ({candidate.organization_scope}); "
+        "do not require generic applicability outside that organization. Still require a narrow trigger, "
+        "portable instructions within that audience, and conditional treatment of environment-dependent facts. "
+        if candidate.organization_scope
+        else "Assess whether it is generic enough for a shared catalog, keeps permissions and workspace-dependent facts conditional, and has a narrow discovery trigger. "
+    )
     return (
         "You are an independent evaluator of exactly one proposed portable Agent Skill. "
         "You receive no repository, tools, credentials, user configuration, or other Skills. "
-        "Do not assume facts absent from this package. Assess whether it is generic enough for a "
-        "shared catalog, keeps permissions and workspace-dependent facts conditional, and has a "
-        "narrow discovery trigger. Put only blocking, concrete fixes in required_changes; put all "
+        "Do not assume facts absent from this package. "
+        + scope_instruction
+        + "Put only blocking, concrete fixes in required_changes; put all "
         "other observations in findings. Propose one realistic "
         "in-scope exercise and one nearby out-of-scope exercise that must not activate it. "
         "Return ready only when the package is suitable to propose for human review; this does not "

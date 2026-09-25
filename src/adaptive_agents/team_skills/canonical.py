@@ -29,6 +29,7 @@ class SourceDescriptor:
     organization: str
     team: str
     organization_default_skill_ids: tuple[str, ...] = ()
+    organization_only_skill_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -42,6 +43,7 @@ class CanonicalSkill:
     digest_sha256: str
     files: tuple[tuple[str, bytes], ...]
     skill_text: str
+    organization_scope: str | None = None
 
     @property
     def materialized_path(self) -> str:
@@ -85,7 +87,14 @@ def _parse_source(root: Path) -> SourceDescriptor:
     data = _json_object(
         root / "team-skills.json",
         allowed=frozenset(
-            {"schema_version", "source_id", "organization", "team", "organization_default_skill_ids"}
+            {
+                "schema_version",
+                "source_id",
+                "organization",
+                "team",
+                "organization_default_skill_ids",
+                "organization_only_skill_ids",
+            }
         ),
     )
     schema_version = data.get("schema_version")
@@ -94,6 +103,8 @@ def _parse_source(root: Path) -> SourceDescriptor:
     raw_defaults = data.get("organization_default_skill_ids", [])
     if schema_version == 1 and "organization_default_skill_ids" in data:
         raise TeamSkillsError("organization_default_skill_ids requires canonical source schema_version 2")
+    if schema_version == 1 and "organization_only_skill_ids" in data:
+        raise TeamSkillsError("organization_only_skill_ids requires canonical source schema_version 2")
     if not isinstance(raw_defaults, list) or any(
         not isinstance(skill_id, str) or not RESOURCE_ID.fullmatch(skill_id) for skill_id in raw_defaults
     ):
@@ -105,15 +116,24 @@ def _parse_source(root: Path) -> SourceDescriptor:
     if not isinstance(organization, str):
         raise TeamSkillsError("canonical organization must be a string")
     organization = organization.strip()
-    if not organization and defaults:
+    raw_private = data.get("organization_only_skill_ids", [])
+    if not isinstance(raw_private, list) or any(
+        not isinstance(skill_id, str) or not RESOURCE_ID.fullmatch(skill_id) for skill_id in raw_private
+    ):
+        raise TeamSkillsError("organization_only_skill_ids must be an array of valid Skill IDs")
+    organization_only = tuple(raw_private)
+    if len(organization_only) != len(set(organization_only)):
+        raise TeamSkillsError("organization_only_skill_ids must not contain duplicates")
+    if not organization and (defaults or organization_only):
         raise TeamSkillsError(
-            "organization_default_skill_ids require a non-empty organization"
+            "organization defaults and organization-only Skills require a non-empty organization"
         )
     return SourceDescriptor(
         _text(data.get("source_id"), "source_id"),
         organization,
         _text(data.get("team"), "team"),
         defaults,
+        organization_only,
     )
 
 
@@ -301,6 +321,9 @@ def load_canonical_catalog(
                 package_digest(files),
                 files,
                 skill_text,
+                descriptor.organization
+                if resource_id in descriptor.organization_only_skill_ids
+                else None,
             )
         )
     ids = [skill.id for skill in parsed]
@@ -321,5 +344,19 @@ def load_canonical_catalog(
     if revoked_defaults:
         raise TeamSkillsError(
             f"organization default Skill must be active: {sorted(revoked_defaults)[0]}"
+        )
+    unknown_private = set(descriptor.organization_only_skill_ids) - set(ids)
+    if unknown_private:
+        raise TeamSkillsError(
+            f"organization-only Skill is missing from catalog: {sorted(unknown_private)[0]}"
+        )
+    revoked_private = {
+        skill.id
+        for skill in parsed
+        if skill.id in descriptor.organization_only_skill_ids and skill.state != "active"
+    }
+    if revoked_private:
+        raise TeamSkillsError(
+            f"organization-only Skill must be active: {sorted(revoked_private)[0]}"
         )
     return CanonicalCatalog(descriptor, source_commit, tuple(parsed))

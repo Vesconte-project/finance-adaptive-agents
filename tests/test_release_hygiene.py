@@ -5,6 +5,8 @@ from pathlib import Path
 
 from adaptive_agents import __version__
 from adaptive_agents.team_skills.canonical import load_canonical_catalog
+from adaptive_agents.team_skills.skill_quality import assessment_prompt
+from adaptive_agents.team_skills.skill_validation import load_candidate
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -58,8 +60,21 @@ def test_canonical_skill_catalog_is_safe_and_portable():
         ),
     ]
     skills = {skill.name: skill for skill in catalog.skills}
-    assert catalog.descriptor.organization == ""
-    assert catalog.descriptor.organization_default_skill_ids == ()
+    assert catalog.descriptor.organization == "Vesconte-project"
+    assert catalog.descriptor.organization_default_skill_ids == (
+        "finance-production-release-channel",
+    )
+    assert catalog.descriptor.organization_only_skill_ids == (
+        "finance-production-release-channel",
+    )
+    assert catalog.by_id()["finance-production-release-channel"].organization_scope == "Vesconte-project"
+    finance_candidate = load_candidate(
+        ROOT / "team-skills/skills/finance-production-release-channel",
+        organization_scope="Vesconte-project",
+    )
+    finance_assessment = assessment_prompt(finance_candidate)
+    assert '"intended_audience":"organization-only for Vesconte-project"' in finance_assessment
+    assert "do not require generic applicability outside that organization" in finance_assessment
     renewal = skills["lets-encrypt-dns01-octodns-renewal"]
     assert "Let's Encrypt" in renewal.description
     assert "private key" in renewal.skill_text.lower()

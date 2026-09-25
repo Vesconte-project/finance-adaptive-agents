@@ -16,6 +16,7 @@ from adaptive_agents.team_skills.repository import (
     TeamSkillsError,
     find_repository,
     repository_identity,
+    repository_organization,
 )
 
 from .canonical import CanonicalCatalog, CanonicalSkill, directory_digest
@@ -84,11 +85,6 @@ class DistributionPlan:
     lock: ConsumerLock
     desired_skills: tuple[CanonicalSkill, ...]
     previous_lock: ConsumerLock | None
-
-
-def _repository_organization(repository_id: str) -> str | None:
-    owner, separator, _name = repository_id.partition("/")
-    return owner if separator and owner else None
 
 
 def _locked(
@@ -380,7 +376,7 @@ class TeamSkillsDistributionService:
             canonical.descriptor.organization_default_skill_ids
             if task is None
             and canonical.descriptor.organization
-            and _repository_organization(repository_id) == canonical.descriptor.organization
+            and repository_organization(repository_id) == canonical.descriptor.organization
             else ()
         )
         selection, receipt = _select(
@@ -556,7 +552,17 @@ class TeamSkillsDistributionService:
             for resource in previous.resources
             if native.ReasonCode.REVOKED in {reason.code for reason in decisions[resource.id].reasons}
         }
-        active_previous = tuple(resource for resource in previous.resources if resource.id not in revoked)
+        outside_organization = {
+            resource.id
+            for resource in previous.resources
+            if resource.id in canonical.descriptor.organization_only_skill_ids
+            and repository_organization(repository_id) != canonical.descriptor.organization
+        }
+        active_previous = tuple(
+            resource
+            for resource in previous.resources
+            if resource.id not in revoked and resource.id not in outside_organization
+        )
         for resource in active_previous:
             decision = decisions[resource.id]
             if not decision.final_eligible:
