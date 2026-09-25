@@ -1,5 +1,10 @@
 # Bucket Lock rollout, change, and removal
 
+Every step below that creates an indefinite rule, extends a duration, or removes a rule requires
+the bucket or account owner's explicit confirmation for that change, recorded with the
+before/after prefix listings (see the authorization gate in SKILL.md). Probes on a disposable
+prefix are the exception.
+
 ## Before creating a real rule
 
 1. **Prove the semantics you depend on with a disposable prefix.** Create a short rule over an
@@ -14,9 +19,10 @@
    Remove partial uploads, test markers and orphans *before* an indefinite rule; afterwards they
    are permanent.
 4. **Choose the duration against the recovery cycle, not by default.** If the rule must outlive
-   one full restore-test cycle, compute the worst-case gap between restore tests (for "first
-   Sunday of the month" it is 35 days) and add margin; a retention equal to the gap gives zero
-   overlap between "validated by a restore" and "still locked".
+   one full restore-test cycle, compute the worst-case gap between restore tests for *your*
+   schedule and add margin (example: "first Sunday of the month" gives gaps of up to 35 days —
+   recompute, do not reuse). A retention equal to the gap gives zero overlap between "validated
+   by a restore" and "still locked".
 5. **State the posture explicitly:** "we can always restore to something recent" (what a rolling
    rule gives) versus "we can restore to any point in the last N months" (which it never gives).
 
@@ -31,13 +37,15 @@
 Two paths with different costs:
 
 - **Wait for expiry** — longer retention means a longer wait.
-- **Remove the rule, delete, recreate** — the unprotected window lasts only as long as the
-  operation, but the whole prefix is exposed during it. List the prefix immediately before
+- **Remove the rule, delete, recreate** — only with the owner's recorded confirmation. The
+  unprotected window lasts only as long as the operation, but the whole prefix is exposed during
+  it. List the prefix immediately before
   removal and immediately after recreation, and compare: only the authorised deletions may
   differ. Without that comparison the window is not just exposed, it is unaudited.
 
 ## Recovery tooling
 
-Protected prefixes may contain loose objects (probes, markers) that can never be removed. Any
-restore tool must be driven by manifests and ignore loose objects at the prefix root; it must not
-assume every object belongs to a complete set.
+Protected prefixes accumulate loose objects (probes, markers, partial uploads) that can never be
+removed, so a listing does not tell you which objects form a complete backup set. Restore
+tooling must identify sets from something written with the set — a manifest, or an equivalent
+completion record — and ignore objects that no set claims.

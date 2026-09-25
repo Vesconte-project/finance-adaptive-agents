@@ -20,17 +20,20 @@ established with disposable probe objects, not by reading documentation.
 Older rclone, invoked without R2 compatibility flags, first issues `PUT /<bucket>` — an attempt
 to **create the bucket** — before uploading. A bucket-scoped token cannot create buckets, so R2
 answers `403 AccessDenied`. It looks like a permission problem on the object write and is not:
-the same key succeeds with another client.
+the same key succeeds with another client. Current rclone with `provider = Cloudflare` may not do
+this, so **first confirm the wire call** (`-vv --dump headers`) instead of assuming this bug.
 
-With these flags the same client, key, file, and prefix produce `PUT /<bucket>/<key>` and succeed:
-
-```text
---s3-no-check-bucket --s3-no-head --s3-no-system-metadata --s3-disable-checksum --use-server-modtime
-```
-
-- Put the flags inside a wrapper that `exec`s rclone, and remove any environment variable that
-  lets a caller override them. A rule that depends on remembering flags will be forgotten, and
-  the next bare invocation will reproduce the misleading 403.
+- **The fix is `--s3-no-check-bucket`.** It suppresses the bucket-creation call; the upload then
+  becomes a plain `PUT /<bucket>/<key>`.
+- The working invocation also carried `--s3-no-head --s3-no-system-metadata
+  --s3-disable-checksum --use-server-modtime`. These are **optional** compatibility and speed
+  choices, not part of the 403 fix, and they were not proven necessary one by one. They reduce
+  client-side checks: `--s3-no-head` skips the post-upload read-back and `--s3-disable-checksum`
+  drops the MD5 rclone would store and compare. Add them only for a stated reason, and if you do,
+  the independent checksum read-back below becomes the only integrity check — mandatory.
+- If uploads go through a wrapper script, put the required flag inside it (`exec rclone ...`)
+  and do not let a caller's environment override it. A rule that depends on remembering flags
+  will be forgotten, and the next bare invocation will reproduce the misleading 403.
 - Verify an upload at the **object**: `LastModified` matching the job's end, size equal to the
   local file, and a companion checksum read back from R2 and compared. Exit status alone is not
   proof — check that the call is not inside a pipeline without `pipefail`, a conditional, or
@@ -66,10 +69,19 @@ With these flags the same client, key, file, and prefix produce `PUT /<bucket>/<
 For a rule rollout, change, or removal, read
 [references/bucket-lock-rollout.md](references/bucket-lock-rollout.md).
 
+## Authorization gate
+
+Creating an indefinite rule, extending a duration, removing a rule, and the "remove, delete,
+recreate" path each either make data permanently undeletable or expose a whole prefix. Before
+any of them, obtain explicit confirmation from the bucket or account owner for that specific
+change — holding dashboard access is not approval — and record it next to the before/after
+prefix listings. Without it, prepare the change and stop.
+
 ## Stop conditions
 
-Stop and report before acting if: you cannot read the rule configuration back from the
-dashboard; the target prefix has not been listed completely and successfully (a timed-out
-listing is not an empty prefix); the data may carry erasure obligations and nobody has decided
-how an urgent deletion would work under retention; or the operation needs a credential you do
-not already legitimately hold.
+Stop and report before acting if: the owner has not confirmed an irreversible or
+exposure-creating rule change; you cannot read the rule configuration back from the dashboard;
+the target prefix has not been listed completely and successfully (a timed-out listing is not an
+empty prefix); the data may carry erasure obligations and nobody has decided how an urgent
+deletion would work under retention; or the operation needs a credential you do not already
+legitimately hold.

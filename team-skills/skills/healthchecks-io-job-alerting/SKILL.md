@@ -6,8 +6,10 @@ description: Use when wiring scheduled jobs, backups, restore tests, or deploy e
 # Healthchecks.io job alerting
 
 Behaviour learned wiring backups, restore tests, a source-backup job, and a deploy-event channel
-to Healthchecks.io. The ping URL is a credential: keep it in a root-owned environment file, never
-in a repository, log, ticket, or chat.
+to Healthchecks.io. The ping URL is a credential: store it where only the job's identity can read
+it (a root-owned environment file, a secret manager, or a masked CI variable — whichever the
+workspace uses; ask before touching root-owned paths), never in a repository, log, ticket, or
+chat.
 
 **Evidence scope.** One Healthchecks.io account, 2026-09, five checks. Confirm plan limits and
 current API behaviour for your account.
@@ -18,15 +20,17 @@ current API behaviour for your account.
   Good for scheduled jobs: a job that never runs is itself the alarm. Send a `/start` ping so the
   grace is measured from the real start, then success or `/fail`.
 - **Explicit alarm** — pings arrive only when something happens (a failed deploy, a prolonged
-  deferral). Configure its period at the maximum; with a normal period it goes "down" on its own
-  for lack of pings.
+  deferral). Configure its period and grace at the largest values the account allows, so that
+  an absence of pings never trips it; with a normal period it goes "down" on its own for lack of
+  pings.
 
-## Delivery traps (verified)
+## Delivery traps (observed; confirm against current docs)
 
 - **HTTP 200 does not mean the ping was accepted.** A rate-limited ping also returns 200. Require
   the response body `OK`; otherwise keep the event in a local outbox and retry. Deliver outbox
   entries in order, under a lock, and quarantine malformed entries instead of retrying them
-  forever.
+  forever. The outbox location, format, and retry cadence are workspace decisions — confirm them
+  with the user rather than inventing them.
 - **Only state transitions notify.** A success ping on an already-green check produces no
   notification; so does a second failure on an already-red check. If people need to know an
   action *completed*, send a success ping on completion and check the event log, which is

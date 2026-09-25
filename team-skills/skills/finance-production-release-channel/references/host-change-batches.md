@@ -1,5 +1,8 @@
 # Host change batches ("lotes")
 
+Organization-private. Every fact here is tied to one host's layout as of 2026-09-25; confirm it
+against `finance-infra` before acting on it.
+
 ## Contract
 
 Every batch is one script in `finance-infra/scripts/` with four modes:
@@ -12,8 +15,9 @@ Every batch is one script in `finance-infra/scripts/` with four modes:
   and writes a receipt.
 - `rollback` — one command back to the recorded baseline.
 
-Agents author and test batches and open PRs. **The founder merges and runs `stage`/`plan`/`apply`
-with interactive sudo.** Agents have no sudo on this host.
+As designed, agents author and test batches and open PRs, and a human with interactive sudo
+merges and runs `stage`/`plan`/`apply`. Confirm this in finance-infra; whatever the current
+split, never run a mode that needs privileges you do not demonstrably hold.
 
 ## Rules learned the hard way
 
@@ -21,7 +25,9 @@ with interactive sudo.** Agents have no sudo on this host.
   opening its PR, and keep its `state` current when it is applied. Two batches were renumbered and
   a third branch reused a taken number within two days.
 - **Two batches that install the same file cannot both merge before one is applied.** The first
-  one staged will carry the second's content and invalidate the second's baseline.
+  one staged will carry the second's content and invalidate the second's baseline. Before
+  opening or merging a batch, check `LOT_REGISTER.json` for batches not yet `applied` and the open
+  PRs for any that install the same target path.
 - **Three-way preflight.** For each installed file: equal to baseline → install; equal to target →
   record a no-op (`APPLIED`, mode `NOOP_ALREADY_INSTALLED`, nothing run); anything else → refuse.
 - **Receipts live where the service identities cannot write.** Use a `root:root 0700` directory;
@@ -40,6 +46,7 @@ with interactive sudo.** Agents have no sudo on this host.
 ## After applying
 
 Record the batch in the lot register and the master plan's execution log in the same or the next
-PR, update the Linear issue, and state what is verified versus reported. A batch is closed only
+PR, update the Linear issue if you have access and authorisation (otherwise report what needs
+updating), and state what is verified versus reported. A batch is closed only
 with its receipt, verification of the final state, and — where the plan says so — one real
 observation after apply; synthetic tests alone do not close it.
