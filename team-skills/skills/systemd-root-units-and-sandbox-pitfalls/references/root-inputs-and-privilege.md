@@ -10,8 +10,9 @@
   subtree and substitute their own. Symlinks move the question to their targets: assess the
   resolved path (`namei -l <path>` lists owner and mode of every component, including links)
   and each link itself. Install root-executed code to a root-owned path (for example under
-  `/usr/local/libexec/`), `0755`, with every ancestor root-owned and no links through
-  user-writable locations.
+  `/usr/local/libexec/`), `0755`, with every ancestor root-owned, not writable by any other
+  account through group or other bits or an ACL, and no links through user-writable
+  locations.
 - An `EnvironmentFile` that selects the interpreter, the checker, or a root-written log path is
   an execution input. Keep it `root:root 0600` in a root-owned directory.
 - If a root job must run untrusted helper code (for example a check that lives in a working

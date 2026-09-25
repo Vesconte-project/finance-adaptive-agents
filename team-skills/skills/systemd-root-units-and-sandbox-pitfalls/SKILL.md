@@ -28,12 +28,21 @@ For the details, read
 
 ## Audit method
 
-To find root execution paths writable by an unprivileged account, enumerate the **system
-manager's** service units (`systemctl list-unit-files`, not `--user`) and keep those with an
-effective root identity: `User=root`, or no `User=` — which means root only in the system
-manager; a user manager's units run as that user. Confirm with `systemctl show -p User -p
-DynamicUser <unit>`. Then check each
-`ExecStart*` executable, absolute path arguments, `WorkingDirectory`, and `EnvironmentFile` —
-and every parent directory of each — for write access by that account. Distinguish executable
-or configuration paths from runtime sockets and data paths. One instance found by accident
-usually means the question was never asked systematically.
+To find root execution paths writable by an unprivileged account:
+
+1. **Pick the right units.** Enumerate the **system manager's** service units
+   (`systemctl list-unit-files`, not `--user`); a user manager's units run as that user.
+2. **Establish the effective identity** with `systemctl show -p User -p DynamicUser <unit>`. A
+   unit runs as root only when `User=root`, or `User=` is unset **and** `DynamicUser=` is not
+   `yes`. Remember that `+` and `!` command prefixes run individual commands as root even in a
+   non-root unit — include those commands too.
+3. **Cover every command directive**, not just `ExecStart`: `ExecCondition=`, `ExecStartPre=`,
+   `ExecStartPost=`, `ExecReload=`, `ExecStop=`, `ExecStopPost=`. For each, check the executable,
+   absolute path arguments, `WorkingDirectory`, and `EnvironmentFile`, plus every parent
+   directory of each.
+4. **Check write access, not ownership.** A root-owned directory can still be writable by
+   others through group or other mode bits or an ACL. For each path component check mode,
+   group membership, and `getfacl`, and resolve symlinks (`namei -l`).
+
+Distinguish executable or configuration paths from runtime sockets and data paths. One instance
+found by accident usually means the question was never asked systematically.
