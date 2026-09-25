@@ -14,16 +14,18 @@ new process connected.
 
 ## A window gate instead of a blind restart
 
-A release channel that activates on merge should ask the API before restarting:
+A release channel that activates on merge should ask the API before restarting. The numbers
+below are what one workspace chose for its schedules and run lengths; they are illustrations,
+not defaults. Derive yours from your schedules, measured run durations, and release policy.
 
 - defer if a run is `RUNNING`/`PENDING` in an affected pool, or if one is scheduled within a
-  safety margin (45 minutes worked for runs of tens of minutes);
-- retry on a short timer (5 minutes cost about 1.5 s of CPU per attempt once dependencies were
-  installed; dozens of retries were negligible);
-- expire after a fixed limit (6 hours) and alert;
+  safety margin (there: 45 minutes, for runs of tens of minutes);
+- retry on a short timer (there: 5 minutes, costing about 1.5 s of CPU per attempt once
+  dependencies were installed);
+- expire after a fixed limit (there: 6 hours) and alert;
 - fail closed when the API does not answer.
 
-Measure how often the gate closes before relying on it. With 15 scheduled runs a day and a
+Measure how often the gate closes before relying on it. In that workspace, with 15 scheduled runs a day and a
 45-minute margin, one pool was closed about 9 hours in 24, with a longest block of 90 minutes;
 a pool with one daily run was closed under an hour.
 

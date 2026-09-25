@@ -1,6 +1,6 @@
 ---
 name: cloudflare-r2-backups-and-bucket-lock
-description: Use when uploading backups or other objects to Cloudflare R2 with rclone, diagnosing 403 errors on R2 uploads, or designing, testing, changing, or removing R2 Bucket Lock retention rules.
+description: Use when an rclone upload to Cloudflare R2 fails with 403 AccessDenied, or when designing, testing, changing, or removing Cloudflare R2 Bucket Lock retention rules. Not for routine R2 uploads that already work, or for AWS S3 Object Lock.
 ---
 
 # Cloudflare R2 backups and Bucket Lock
@@ -39,14 +39,17 @@ this, so **first confirm the wire call** (`-vv --dump headers`) instead of assum
   proof — check that the call is not inside a pipeline without `pipefail`, a conditional, or
   followed by `||`, and prove failure propagation with a stub that exits non-zero.
 
-## What R2 does not give you
+## What R2 did not give us (observed; re-check)
 
-- **No object versioning.** `GetBucketVersioning` / `PutBucketVersioning` are not implemented. A
-  deleted or overwritten object is gone.
+Observed through the S3 API with the bucket-scoped token above. Check current R2 documentation
+and what your own token can read before relying on any of it.
+
+- **No object versioning.** `GetBucketVersioning` / `PutBucketVersioning` were not implemented.
+  If that still holds, a deleted or overwritten object is gone.
 - Several S3 configuration reads (`GetBucketPolicy`, `GetPublicAccessBlock`, lifecycle, object
-  lock configuration) return `AccessDenied` or are unimplemented through the S3 API. Public
-  access, other tokens' scope, and retention rules can only be read in the Cloudflare dashboard.
-  Record them as unknown until someone reads the dashboard.
+  lock configuration) returned `AccessDenied` or were unimplemented. With that token, public
+  access, other tokens' scope, and retention rules could only be read in the Cloudflare
+  dashboard. Record whatever you cannot read as unknown, not as absent.
 
 ## Bucket Lock: the semantics that matter
 

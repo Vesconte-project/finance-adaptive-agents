@@ -9,8 +9,10 @@ description: Organization-private (Vesconte-project). Use when merging to main, 
 production server; it is of no use anywhere else. An agent working in one application repository
 cannot see how its merge reaches production; this Skill closes that gap.
 
-This Skill does not authorise a merge, deploy, host change, or credential change. Company OS
-governance (work admission, human merge, human Acceptance) still applies to every change.
+This Skill does not authorise a merge, deploy, host change, or credential change. The
+organization's governance rules (Company OS, in `Vesconte-project/company-os` `AGENTS.md`: work
+admission, human merge, human Acceptance) apply to every change; if you cannot read them, say so
+and do not treat any change as admitted.
 
 ## Source of truth and precondition
 

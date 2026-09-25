@@ -1,16 +1,17 @@
 ---
 name: systemd-root-units-and-sandbox-pitfalls
-description: Use when writing, hardening, auditing, or debugging systemd units that run as root, mix root steps with sandboxing, set memory limits or OOM policies, use custom exit codes or transient units, pass secrets on the command line, or run socket-activated SSH.
+description: Use when auditing which paths or environment files control what a root systemd unit executes, running root steps (+ or !) inside a sandboxed unit, choosing OOMPolicy for a worker that spawns job processes, adding a non-failure exit code to a unit and its callers, verifying transient systemd-run oneshot units, keeping secrets off unit command lines, or checking where socket-activated OpenSSH listens. Not for writing ordinary units with no such concern.
 ---
 
 # systemd root units and sandbox pitfalls
 
-These are failure modes found while hardening a production Ubuntu host, each of which looked
-correct on review and was wrong in practice. They complement, not replace, the systemd manual
+These are failure modes that looked correct on review and were wrong in practice. They complement, not replace, the systemd manual
 pages. This Skill does not grant root; privileged changes follow the host's own authorisation.
 
-**Evidence scope.** Ubuntu with systemd and socket-activated OpenSSH, 2026-09. Items marked
-*verified* were reproduced on the host; items marked *not yet verified* are reasoned risks.
+**Evidence scope.** One Ubuntu host with systemd and socket-activated OpenSSH, 2026-09. Items
+marked *verified* were reproduced there, not on every distribution or systemd version; items
+marked *not yet verified* are reasoned risks. Reproduce the behaviour on your own host before
+relying on it.
 
 Route to the one reference you need:
 

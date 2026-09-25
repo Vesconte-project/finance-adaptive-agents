@@ -7,8 +7,12 @@ description: Use when deploying, operating, or diagnosing a self-hosted Prefect 
 
 Practice learned running a self-hosted Prefect 3 control plane with process workers on one host,
 where deployments pull code from Git at run time. It covers behaviour that the documentation does
-not make obvious and that produced real incidents. It does not authorise changing schedules,
-deployments, or production data.
+not make obvious and that produced real incidents.
+
+**It authorises nothing.** Restarting a worker or the server, republishing deployments, changing
+schedules, job variables or environments, rotating credentials, and touching production data
+each need the user's explicit authorisation and the workspace's own change procedure. Without
+them, diagnose and propose; do not act.
 
 **Evidence scope.** Prefect server 3.7.x with workers on 3.8.x, two work pools, `git_clone` pull
 steps over SSH, 2026-08 → 09. Re-check version-sensitive API behaviour on other versions.
