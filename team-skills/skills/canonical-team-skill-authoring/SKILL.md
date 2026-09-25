@@ -29,6 +29,16 @@ Prefer one coherent Skill with progressive references over many near-duplicate S
 reference into an independent Skill only when it has a distinct discovery trigger, materially
 different authority or failure semantics, and its own evidence/test lifecycle.
 
+## Preserve learned practice
+
+Before drafting, state what decision this Skill improves beyond generally available product
+documentation. Prefer non-obvious practice learned by operating, maintaining, debugging, or
+comparing methods. Capture why the practice is preferred, when it applies, when it does not,
+recognizable failure signals, and how to verify the result. Record the evidence and its version
+or workspace scope when relevant. A single incident may justify a narrow safety lesson, but do
+not present it as a universal rule without corroboration. If the Skill adds no meaningful
+decision value beyond current documentation, do not canonize it as team knowledge.
+
 ## Author and validate
 
 Keep `name` and `description` narrow enough for reliable discovery. Put shared purpose,
