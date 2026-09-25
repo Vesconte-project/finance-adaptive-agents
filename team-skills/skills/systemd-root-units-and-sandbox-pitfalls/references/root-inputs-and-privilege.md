@@ -4,8 +4,9 @@
 
 - A root unit executing a script under a home directory is usually a local privilege escalation
   even if the script itself is `root:root`. Whoever can write the script's directory can rename
-  it away and put their own file in its place — unless the directory is sticky (`+t`), where
-  only the entry's owner may rename it. Whoever can write a higher ancestor can rename the whole
+  it away and put their own file in its place. In a sticky (`+t`) directory only the entry's
+  owner, the directory's owner, or root may rename or remove it — so a sticky directory is safe
+  only if the unprivileged account owns neither. Whoever can write a higher ancestor can rename the whole
   subtree and substitute their own. Symlinks move the question to their targets: assess the
   resolved path (`namei -l <path>` lists owner and mode of every component, including links)
   and each link itself. Install root-executed code to a root-owned path (for example under
@@ -16,11 +17,14 @@
 - If a root job must run untrusted helper code (for example a check that lives in a working
   tree), drop privilege explicitly for that step (`runuser --user <account> -- …`) instead of
   letting it inherit root.
-- Prove the fix as the unprivileged account, without touching the real file: for the file and
-  for every directory on the resolved path, attempt the operations that would allow
-  replacement — append-open the file, and create and remove a scratch entry in each directory
-  (for a sticky directory, also check who owns the entry in it). Expect `Permission denied`
-  every time; reading modes is not proof.
+- Prove the fix as the unprivileged account, without touching the real file:
+  - append-open the file itself: expect `Permission denied`;
+  - for each **non-sticky** directory on the resolved path, create and remove a scratch entry:
+    expect `Permission denied`;
+  - for each **sticky** directory, creating a scratch entry may legitimately succeed and proves
+    nothing; instead confirm that the account owns neither the directory nor the next entry on
+    the path (`stat -c '%U %A'`).
+  Reading modes alone is not proof for the non-sticky cases.
 
 ## Root steps inside a sandboxed unit (verified)
 
@@ -40,8 +44,10 @@ something like `phase=<name> euid=0 inputs=<n> values=<m>` and make the verifica
 that exact line from that invocation's journal. A root phase that silently fails to read its
 inputs is indistinguishable from one that found nothing.
 
-To test a unit's sandbox without touching the real unit, start a transient probe unit with the
-same directives. A transient `Type=oneshot` unit is unloaded as soon as it becomes inactive, so
+To test a unit's sandbox without touching the real unit, and only where you are authorised to
+start units on that host under its change policy, start a transient probe unit with the same
+directives. Without that authorisation, inspect (`systemctl cat`, `systemd-analyze security
+<unit>`) and hand the probe to someone who holds it. A transient `Type=oneshot` unit is unloaded as soon as it becomes inactive, so
 give it `RemainAfterExit=yes` and read its invocation ID and journal before removing it.
 
 ## Secrets on the command line (verified)

@@ -28,8 +28,11 @@ For the details, read
 
 ## Audit method
 
-To find root execution paths writable by an unprivileged account, enumerate every installed
-service unit with an effective root identity (`User=root` or no `User=`), then check each
+To find root execution paths writable by an unprivileged account, enumerate the **system
+manager's** service units (`systemctl list-unit-files`, not `--user`) and keep those with an
+effective root identity: `User=root`, or no `User=` — which means root only in the system
+manager; a user manager's units run as that user. Confirm with `systemctl show -p User -p
+DynamicUser <unit>`. Then check each
 `ExecStart*` executable, absolute path arguments, `WorkingDirectory`, and `EnvironmentFile` —
 and every parent directory of each — for write access by that account. Distinguish executable
 or configuration paths from runtime sockets and data paths. One instance found by accident
