@@ -232,7 +232,7 @@ starting with an advanced command cannot silently fall back to an unchosen provi
 `show` remain available without setup because they perform no model selection.
 
 Install the CLI itself once from the approved Git distribution using
-`pipx install "git+https://github.com/<organization>/adaptive-agents.git@main"`, then
+`pipx install "git+https://github.com/Vesconte-project/adaptive-agents.git@main"`, then
 run `team-skills prepare`. The installed Skill turns a natural-language request into task-scoped
 preparation, asks only material clarification questions, and always previews before application. A
 Codex plugin may package this conversational entry point as an optional user interface, but the CLI

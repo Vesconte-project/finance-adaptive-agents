@@ -284,7 +284,7 @@ The CLI is the shared foundation: it is independent of Codex, Claude, Copilot, a
 distribution once:
 
 ```sh
-pipx install "git+https://github.com/<organization>/<team-knowledge-repository>.git@main"
+pipx install "git+https://github.com/Vesconte-project/<team-knowledge-repository>.git@main"
 team-skills prepare
 ```
 

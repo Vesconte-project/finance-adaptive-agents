@@ -848,7 +848,7 @@ def test_default_bootstrap_without_source_uses_bundled_catalog(monkeypatch, tmp_
     assert len(selector.calls) == 1
     assert native_calls == {"admit": 1, "receipt": 1, "validate": 1}
     assert (DEFAULT_SOURCE_URL, DEFAULT_SOURCE_REF, DEFAULT_CATALOG_PATH) == (
-        "https://github.com/<organization>/adaptive_agents.git",
+        "https://github.com/Vesconte-project/adaptive_agents.git",
         "main",
         "team-skills",
     )
