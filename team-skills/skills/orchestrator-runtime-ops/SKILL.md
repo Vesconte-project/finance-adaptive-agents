@@ -1,53 +1,75 @@
 ---
 name: orchestrator-runtime-ops
-description: Operar um orquestrador de trabalho agendado (Prefect, Airflow e semelhantes) que corre no mesmo host dos serviços: janelas de manutenção, pausar e repor agendamentos, provar que um worker trabalha mesmo, código clonado em tempo de execução, runs presas e variáveis de deployment. Usa antes de reiniciar um servidor de orquestração ou workers, ao migrar a identidade de um worker, ou quando um deploy pode apanhar trabalho a meio.
+description: Operar workers e deployments Prefect num host partilhado com serviços de produção, quando um restart, mudança de identidade ou deploy pode interromper trabalho agendado. Usa após confirmar que o ambiente é Prefect e que a versão/API corresponde; não para outros motores ou operação genérica de jobs.
 ---
 
 # Orquestradores: o que parte quando se mexe
 
-Um orquestrador junta três coisas que normalmente estão separadas: um servidor
-de API, workers de vida longa, e **definições de trabalho guardadas numa base
-de dados**. A terceira é a que surpreende, porque não vive no repositório nem
-no host.
+Esta skill trata de ambientes Prefect. Os exemplos pressupõem uma API e um
+modelo de deployments compatíveis com a versão em que foram escritos; confirma
+as versões instaladas do servidor e cliente, a configuração real e o schema/API
+suportado antes de usar endpoints ou inferir semânticas. Não assumes que outro
+orquestrador partilha o mesmo modelo de API, workers ou definições persistidas.
 
-## Antes de reiniciar seja o que for
+## Antes de reiniciar um worker Prefect
 
-**Pergunta se há trabalho a correr, e quando é o próximo.** Um restart mata os
-processos filhos dos workers, e um flow interrompido a meio de escrever deixa
-dados parciais — pior do que uma execução que simplesmente não aconteceu.
+Antes de qualquer operação, confirma que o alvo é Prefect, a versão/API,
+workspace, identidade, permissões de leitura/alteração e aprovação necessária.
+Confirma também qual serviço será reiniciado e se o operador autorizou a janela.
+Não pauses schedules nem reinicies serviços automaticamente.
+
+**Pergunta se há trabalho a correr, e quando é o próximo.** Um restart pode
+interromper processos filhos; um flow interrompido durante uma escrita pode
+deixar dados parciais. Usa apenas consultas compatíveis com a API confirmada e
+com acesso autorizado, pedindo apenas os campos necessários e removendo
+segredos dos resultados apresentados.
 
 ```bash
-# runs ativas
-curl -s -X POST $API/flow_runs/filter -H 'content-type: application/json' \
-  -d '{"limit":10,"flow_runs":{"state":{"type":{"any_":["RUNNING","PENDING"]}}}}'
+# Exemplo: primeira página; confirma endpoint/API e autenticação antes de usar.
+curl -fsS -X POST "$API/flow_runs/filter" -H 'content-type: application/json' \
+  -d '{"limit":10,"offset":0,"flow_runs":{"state":{"type":{"any_":["RUNNING","PENDING"]}}}}'
 
-# próximos agendamentos
-curl -s -X POST $API/flow_runs/filter -H 'content-type: application/json' \
-  -d '{"limit":10,"sort":"EXPECTED_START_TIME_ASC","flow_runs":{"state":{"type":{"any_":["SCHEDULED"]}}}}'
+# Exemplo: primeira página de agendamentos; aplica o intervalo relevante.
+curl -fsS -X POST "$API/flow_runs/filter" -H 'content-type: application/json' \
+  -d '{"limit":10,"offset":0,"sort":"EXPECTED_START_TIME_ASC","flow_runs":{"state":{"type":{"any_":["SCHEDULED"]}}}}'
 ```
 
-Calcula as janelas livres a partir dos agendamentos **e da duração típica** de
-cada trabalho: um job que começa às 23:10 e demora uma hora ocupa até às 00:15,
-não até às 23:11. Exige margem (20 a 45 minutos) antes do próximo.
+Cada comando mostra apenas uma página. Para decidir se é seguro reiniciar, usa a
+paginação e o sinal de total/fim de página suportados pela versão confirmada até
+cobrir todas as runs ativas e todos os agendamentos da janela relevante; não
+interpretes 10 resultados como lista completa. Se a API não indicar completude,
+declara a incerteza e não concluas que não há trabalho. `-f` e `-S` fazem erros
+HTTP/transporte falharem visivelmente; uma falha não é uma resposta vazia. Atualiza
+a consulta imediatamente antes do restart para reduzir corridas com novas runs.
 
-**Se precisares mesmo de uma janela e ela não existir**, pausar os agendamentos
-é mais limpo do que deixar um job ser morto. Guarda a lista do que pausaste e
-repõe-na no fim — uma execução diária saltada recupera-se; uma interrompida a
-meio, não necessariamente.
+Calcula janelas livres com os agendamentos e duração observada dos trabalhos.
+Acrescenta uma margem apenas conforme a política e variabilidade desse
+ambiente; os exemplos de horários ou margens não são limiares universais.
+
+Se uma janela autorizada não existir e a política permitir pausar trabalho,
+guarda o estado exato dos schedules afetados e a aprovação do operador antes de
+pausar. Restaura apenas os schedules alterados por esta operação e confirma o
+estado final; considera execuções perdidas e efeitos de negócio antes de decidir
+se uma run pode ser retomada.
 
 ## Provar que um worker trabalha
 
-`is-active` não chega, e o estado `ONLINE` também não: o registo do worker
-anterior, com o mesmo nome, sobrevive ao restart durante um tempo.
+`is-active` não prova que o worker Prefect está a receber trabalho. O estado e
+a persistência de registos `ONLINE` dependem da versão e configuração; confirma
+o comportamento real antes de os usar como evidência.
 
 - Exige um **heartbeat posterior** ao instante em que a mudança começou.
-- Melhor ainda: exige uma **execução real** terminada com sucesso. É a única
-  prova de que o worker recebe trabalho, clona código e escreve onde deve.
+- Uma execução terminada com sucesso pode testar um caminho adicional apenas
+  se houver autorização explícita e um canary seguro, idempotente e sem efeitos
+  externos indesejados. O sucesso valida só o caminho exercitado; não prova que
+  todos os workers, clones, ações ou destinos de escrita estão corretos. Se não
+  houver canary aprovado, usa evidência não mutante e declara a limitação.
 
 ## O código que corre pode não ser o que instalaste
 
-Muitos orquestradores clonam o código no momento de cada execução, a partir de
-um repositório e de um commit fixado nas definições de deployment. Nesse caso:
+Quando a configuração Prefect efetivamente clona código no momento da execução
+a partir de um commit fixado no deployment (confirma versão e pull steps),
+então compara os commits configurados com a release.
 
 - a release instalada governa o **ambiente** (interpretador e dependências),
   não o código executado;
@@ -57,55 +79,71 @@ um repositório e de um commit fixado nas definições de deployment. Nesse caso
   fixado em cada deployment com o da release.
 
 ```bash
-curl -s -X POST $API/deployments/filter -H 'content-type: application/json' -d '{"limit":200}' \
+curl -fsS -X POST "$API/deployments/filter" -H 'content-type: application/json' -d '{"limit":200}' \
  | python3 -c "import json,sys,collections; print(collections.Counter((s['prefect.deployments.steps.git_clone']['repository'], s['prefect.deployments.steps.git_clone']['commit_sha'][:10]) for d in json.load(sys.stdin) for s in (d.get('pull_steps') or []) if 'prefect.deployments.steps.git_clone' in s))"
 ```
 
-**Consequência ao mudar a identidade do worker:** o clone em tempo de execução
-usa as credenciais da identidade nova. Aliases SSH, `known_hosts` e o `HOME` têm
-de existir para ela, dentro do sandbox da unit. Verifica-o **dentro** do
-contexto real (mesmo namespace, identidade e restrições), não de fora.
+Este exemplo só se aplica à API Prefect confirmada, com endpoint configurado e
+consulta autorizada; autentica pelo mecanismo seguro do cliente, sem tokens na
+linha de comando. O limite de 200 é apenas uma página: pagina conforme o schema
+da versão e confirma o total antes de tratar o resultado como inventário
+completo. Um erro HTTP ou de transporte deve ser reportado, não contado como
+lista vazia.
+
+**Consequência ao mudar a identidade do worker:** se a configuração clonar em
+runtime, confirma os aliases SSH, `known_hosts` e `HOME` efetivos da identidade
+nova sem revelar chaves ou valores secretos. Usa apenas ferramentas e
+permissões autorizadas, dentro do contexto real quando namespace e restrições
+forem relevantes.
 
 ## As variáveis de deployment são uma camada de configuração — e de segredos
 
-As definições guardam frequentemente variáveis de ambiente por deployment, que
-se sobrepõem ao que a unit fornece. Duas consequências:
+Na versão e configuração Prefect que suporta variáveis por deployment, confirma
+se são aplicadas e como interagem com o ambiente do worker; não assumes
+precedência universal. Inspeciona apenas com acesso autorizado e não imprimas
+valores de credenciais. A persistência de valores de vault/secret depende da
+versão e do fluxo de publicação; confirma onde são resolvidos e guardados antes
+de concluir que foram expostos. Possíveis consequências incluem:
 
 1. **Caminhos antigos sobrevivem lá dentro** e só rebentam quando a identidade
-   ou as permissões mudam. Foi assim que 16 deployments continuaram a apontar
-   para um diretório que a identidade nova não conseguia atravessar.
-2. **Segredos acabam lá em texto simples.** Referências a cofres em ficheiros de
-   configuração são resolvidas no momento da publicação, e o valor final fica
-   guardado na base de dados do orquestrador, legível por quem alcance a API.
+  ou as permissões mudam. Num exemplo de incidente, deployments continuaram a
+  apontar para um diretório que a identidade nova não conseguia atravessar.
+2. **Segredos podem acabar lá em texto simples.** Em algumas configurações,
+  referências a cofres podem ser resolvidas durante a publicação e o valor
+  final persistido no backend; verifica a versão, o fluxo e as permissões
+  efetivos antes de tirar essa conclusão.
 
-Regra: as variáveis de deployment devem conter apenas o que é específico
-daquele trabalho e não é segredo. Credenciais e caminhos de máquina vêm do
-ambiente da unit. Se encontrares um segredo ali, trata-o como exposto e roda-o.
+Revisa variáveis de deployment segundo a política do ambiente. Se um valor
+secreto tiver sido exposto a uma API ou utilizadores não autorizados, segue o
+procedimento de incidente e rotação de credenciais aprovado; não rodes credenciais
+nem publiques definições sem autorização e plano de recuperação.
 
 ## Adiar é melhor do que interromper — mas tem de se ver de fora
 
 Quando uma mudança apanha trabalho a correr, adiar a ativação é mais seguro do
 que matar o processo a meio. Mas um gate que adia cria um **terceiro estado** —
 aceite, feito, falhado — e quase toda a tubagem a montante só sabe representar
-dois. Consequências medidas num caso real: um adiamento legítimo apareceu como
-CI vermelho, e o adiamento do primeiro de três pedidos impediu silenciosamente
-os outros dois.
+dois. Num exemplo de fluxo, um adiamento apareceu como CI vermelho e
+interrompeu pedidos seguintes. Trata-se de um caso, não de comportamento
+esperado em todos os sistemas.
 
-Antes de instalares o gate, mede também **quanto do dia ele fecha**: soma as
-janelas de `agendamento − margem` até ao fim da execução típica. Numa pool com
-15 execuções diárias e 45 minutos de margem, deu 9 horas fechadas em 24 (38%),
-com o maior bloco contíguo de 1h30 — logo a expiração de 6 horas nunca dispara
-por agendamento, só por uma run presa. Sem esta conta, não sabes se criaste um
-gate ou um bloqueio.
+Se o gate e a política de janela forem usados, estima o impacto com os
+agendamentos, duração e margem medidos para esse ambiente. Os números de um
+exemplo não são metas nem limites de timeout; documenta as hipóteses e valida a
+política com o operador antes de instalar o gate.
 
-A skill `deploy-outcome-visibility` trata o desenho do sinal.
+Define no próprio workflow como os estados aceite, concluído e falhado chegam
+ao operador; não infiras conclusão a partir de um resultado de CI verde.
 
 ## Runs presas
 
-Um worker que morre sem transição de estado deixa runs eternamente em
-`RUNNING`. Ocupam janelas de manutenção e podem consumir limites de
-concorrência. Fecha-as por **ID exato**, depois de confirmar nome e hora, com
-transição forçada para um estado terminal. Nunca em bloco por filtro.
+Uma run que parece presa pode ainda ter um processo ativo ou efeitos em curso.
+Antes de qualquer transição terminal, confirma o backend/versão, identifica o
+run exato, verifica o worker e resolve ou pára com segurança o processo
+subjacente; avalia efeitos parciais e possibilidade de recuperação. Só depois,
+com autorização explícita e pela API suportada, considera uma transição forçada
+para o ID exato. Uma alteração de estado na API não prova que o trabalho parou;
+nunca atualizes runs em bloco por filtro.
 
 ## Versões entre servidor e workers
 

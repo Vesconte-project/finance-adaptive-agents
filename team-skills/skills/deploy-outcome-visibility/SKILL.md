@@ -1,6 +1,6 @@
 ---
 name: deploy-outcome-visibility
-description: Desenhar o sinal de saída de deploys, gates e trabalho automático para quem não está na máquina. Usa ao introduzir um gate que adia trabalho, ao escolher códigos de saída para estados novos, ao configurar alertas de falha, quando um CI fica vermelho por algo que funcionou como desenhado, ou quando alguém pergunta "como é que eu sei que isto entrou em produção?".
+description: Tornar visíveis os resultados aceite, concluído e falhado de um deploy ou gate de release a quem não acompanha o host. Usa ao desenhar esse fluxo de release; não para configurar alertas gerais nem diagnosticar falhas de CI sem relação com deploy.
 ---
 
 # O operador não está no servidor
@@ -40,24 +40,30 @@ e o ecrã de quem fez merge tem de o saber traduzir. Basta uma não saber.
 
 ## Traça o código de saída por todas as camadas
 
-Um estado novo precisa de um código próprio **e** de tradução em cada fronteira.
-Caso real, com um gate que adia a ativação quando há trabalho agendado nos 45
-minutos seguintes:
+Um estado novo precisa de uma representação distinta **e** de tradução em cada
+fronteira do fluxo existente. Neste exemplo, um gate adia a ativação quando há
+trabalho agendado nos 45 minutos seguintes:
 
 | Camada | O que faz com o "adiado" | Se não for traduzido |
 | --- | --- | --- |
 | script validador | sai com 75 (código próprio, distinto de 1) | correto |
-| unit systemd | sem `SuccessExitStatus=75`, marca a unit `failed` | primeiro degrau da mentira |
-| cliente (`systemctl start`, `check=True`) | levanta exceção | segundo degrau |
-| step de CI | fica **vermelho** | quem fez merge lê "o deploy falhou" |
+| unit systemd, se usada | sem `SuccessExitStatus=75`, pode marcar a unit `failed` | primeiro degrau da mentira |
+| cliente, neste caso `systemctl start` com `check=True` | levanta exceção | segundo degrau |
+| step de CI | depende de como traduz o resultado do cliente | quem fez merge pode ler "o deploy falhou" |
 | notificação | email de falha de CI | aprende-se a ignorar vermelhos |
 
-A correção é uma linha na unit (`SuccessExitStatus=75`) **e** o cliente a
-imprimir qual dos estados aconteceu. Nenhuma das duas sozinha resolve.
+A configuração depende das semânticas do executor: numa unit systemd, confirma
+o efeito de `SuccessExitStatus=75`; no cliente, confirma como esse código é
+traduzido. Aplica essas opções apenas quando os componentes existem e o código
+representa realmente "adiado" no sistema alvo.
 
-Depois de o exit 0 passar a significar "aceite", há uma dívida nova: **verde no
-CI deixa de significar "em produção"**. Escreve isso no log do step, em letras,
-e no README do repo. Senão as pessoas vão assumir o contrário, com razão.
+Se a unit systemd tratar 75 como sucesso, `systemctl start` pode também devolver
+sucesso. Isso só descreve o resultado da unit, não prova que o deploy foi
+concluído; as camadas seguintes ainda têm de comunicar explicitamente "aceite".
+
+Se exit 0 passar a significar "aceite", **verde no CI deixa de significar "em
+produção"**. Documenta esse significado no artefacto de revisão aplicável e no
+output do workflow, se existir.
 
 ## A assimetria que deixa o operador no escuro
 
@@ -66,8 +72,10 @@ Consequência exata — um deploy adiado que **entra** meia hora depois não pro
 nenhum sinal. Quem fez merge ficou com um vermelho na cabeça e nunca soube que
 resolveu.
 
-Manda os dois sinais para o **mesmo** check de monitorização: falha e sucesso.
-Assim ganhas três coisas:
+Se o fornecedor suportar recuperação no mesmo check, considera enviar-lhe
+falha e sucesso. Confirma primeiro as semânticas de transição e notificação; se
+esse modelo não existir, escolhe um canal que distinga explicitamente falha de
+recuperação. O modelo de mesmo check pode dar:
 
 - notificação nas **transições** (partiu / recuperou), sem ruído no meio;
 - a cor do check reflete sempre o **último** resultado real;
@@ -80,20 +88,19 @@ o painel:
 
 | Tipo | Alerta quando | Período | Exemplo |
 | --- | --- | --- | --- |
-| **Dead man's switch** | o ping **não** chega | curto (o do trabalho: diário, horário) | backup noturno, monitor periódico |
-| **Alarme explícito** | alguém faz ping de falha | **o máximo possível** | falha de release, incidente pontual |
+| **Dead man's switch** | o ping **não** chega | definido pela frequência esperada e tolerância ao atraso | backup noturno, monitor periódico |
+| **Alarme explícito** | alguém faz ping de falha | configurado conforme o fornecedor, sem atraso ou supressão indesejados | falha de release, incidente pontual |
 
-Um alarme explícito com período curto fica "down" sozinho por silêncio e
-mente. Um dead man's switch com período infinito nunca deteta o silêncio, que
-era o seu único propósito.
+Estes períodos dependem do fornecedor e do tipo de check. Confirma no sistema
+alvo como timeout, silêncio e recuperação são tratados; um período inadequado
+pode criar alarmes falsos ou deixar de detetar silêncio.
 
 Dois detalhes que só se aprendem a usar:
 
-- um check que nunca recebeu ping aparece **cinzento/"new"**, não verde. É
-  facilmente confundido com "desativado". Diz isso na documentação.
-- um alarme explícito **não se limpa sozinho**: fica vermelho até alguém enviar
-  o sinal de recuperação. Documenta o comando de reset ao lado do de instalação.
-  Sem ele, o painel acumula vermelhos antigos e perde-se o hábito de olhar.
+- em alguns fornecedores, um check sem pings aparece **cinzento/"new"**.
+  Confirma e documenta o estado inicial real.
+- alguns alarmes explícitos não se limpam sozinhos. Confirma como o sistema
+  assinala recuperação e documenta o reset aplicável, se existir.
 
 ## O corpo do ping é o diagnóstico
 
@@ -103,15 +110,17 @@ decidir **se** é preciso agir:
 
 - o que falhou (componente), em que versão (SHA completo), em que estado
   (vocabulário fechado de estados, não texto livre);
-- a causa, truncada e higienizada: primeira linha, URLs e atribuições de
-  segredo removidas, limite de caracteres;
-- nunca tokens, DSNs ou valores de ambiente. A notificação atravessa email e
-  serviços terceiros.
+- um código diagnóstico e campos de uma allowlist aprovada, sanitizados por um
+  mecanismo testado; não encaminhes uma linha arbitrária de exceção/log apenas
+  por remover URLs ou atribuições conhecidas;
+- nunca tokens, DSNs, valores de ambiente ou texto livre não verificado.
+  Respeita as regras de acesso e exposição de dados; se não houver sanitização
+  confiável, omite a causa e envia apenas o código diagnóstico permitido.
 
 ## Pedidos em sequência: o adiamento parcial
 
-Armadilha real e caríssima. Um workflow pedia três componentes em sequência, no
-mesmo bloco de shell com `-e`:
+Um workflow pode pedir vários componentes em sequência, por exemplo no mesmo
+bloco de shell com `-e`:
 
 ```
 request-release COMPONENTE-A "$SHA"
@@ -119,36 +128,43 @@ request-release COMPONENTE-B "$SHA"
 request-release COMPONENTE-C "$SHA"
 ```
 
-Quando o gate adiou **A**, o shell abortou e **B e C nunca chegaram a ser
-pedidos**. O retry automático só conhece A, porque só A tem pedido registado.
-Meia hora depois: A na versão nova, B e C na antiga, nada a avisar, e um
-vermelho no CI que parecia explicar tudo.
+Num fluxo deste tipo, se o gate adiar **A** e o shell abortar, **B e C podem
+nunca chegar a ser pedidos**. Um retry que só conhece A não cobre os pedidos
+que não foram registados.
 
-Regras:
+Antes de registar antecipadamente todos os pedidos, confirma que essa operação
+é segura, idempotente e não inicia deploys antes de o gate os aceitar. Se for,
+regista todos antes do gate. Caso contrário, usa uma transação ou outro
+mecanismo que garanta que nenhuma parte do release começa isoladamente.
 
-- **escreve todos os pedidos antes de qualquer gate poder interromper**;
-- a falha de um não impede os seguintes; reporta o estado agregado no fim;
+Se o workflow usar este padrão, considera também estas medidas:
+
+- não deixes uma falha abortar pedidos independentes sem primeiro confirmar que
+  continuar é seguro; reporta o estado agregado no fim;
 - se houver retry, garante que cobre **todos** os pedidos registados;
 - versões diferentes entre componentes do mesmo commit têm de ser detetáveis
   por uma sonda, não pela memória de ninguém.
 
-## Testa o canal no dia em que o instalas
+## Testa o canal quando estiver autorizado
 
-Um alerta que nunca disparou não é um alerta: é uma intenção. No dia da
-instalação, envia um evento de teste pelo caminho real — o binário instalado, o
-ficheiro de configuração real, o destino real — confirma que chega, lê o corpo,
-e depois limpa. Custa dois minutos e é a diferença entre ter e achar que tens.
+Um alerta que nunca disparou não foi validado ponta a ponta. Se as ferramentas,
+o destino e a autorização estiverem disponíveis, testa pelo caminho que o
+ambiente realmente usa. Prefere um canal de teste ou staging; não contactes
+destinos reais, executes binários instalados nem faças resets de produção sem
+autorização explícita. Sem essas condições, descreve o teste necessário sem o
+executar.
 
 ## Checklist antes de dar um gate por acabado
 
-1. Cada estado tem código de saída próprio, distinto de 1?
+1. Cada estado tem uma representação distinta e é traduzido em cada fronteira? Se o fluxo usar códigos de saída, cada estado relevante tem um código não ambíguo?
 2. Cada fronteira entre o script e o ecrã traduz esse código?
 3. O sucesso depois de um adiamento produz sinal?
 4. Um verde no CI diz explicitamente o que significa?
-5. O alarme foi testado ponta a ponta e tem comando de reset documentado?
+5. O canal foi testado segundo as capacidades do fornecedor e a autorização disponível; o reset aplicável está documentado?
 6. Um pedido múltiplo sobrevive a um adiamento no primeiro elemento?
-7. Existe uma sonda de leitura que diga "o que está em produção agora", que
-   qualquer pessoa consiga correr sem privilégios?
+7. Existe uma leitura do estado instalado adequada às funções autorizadas e às
+  regras de acesso do ambiente? Se não puder ser disponibilizada, a limitação
+  está documentada?
 
 ## Quando não aplicar
 
@@ -157,9 +173,7 @@ o custo disto não se paga — um `journalctl` resolve. O valor aparece no momen
 em que existe **uma** pessoa, agente ou equipa que decide e não observa. Nesse
 momento, aparece todo de uma vez.
 
-## Relacionadas
-
-- `orchestrator-runtime-ops`: quando e por que razão adiar em vez de interromper.
-- `diagnose-host-failures`: secção "Sinais para fora da máquina", com estes casos
-  indexados por sintoma.
-- `verify-against-the-host`: a sonda que prova o que está mesmo em produção.
+Antes de afirmar que uma versão entrou em produção, verifica evidência adequada
+ao alvo instalado (por exemplo, SHA ativo ou resultado de uma sonda autorizada).
+Sem acesso ao host, declara essa limitação em vez de inferir o estado a partir
+do CI.

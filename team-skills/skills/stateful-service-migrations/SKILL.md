@@ -1,76 +1,112 @@
 ---
 name: stateful-service-migrations
-description: Mover estado e artefactos para fora de checkouts Git ou de volumes implícitos, sem perder dados e com rollback, incluindo bases de dados em contentores. Usa quando serviços correm a partir de repositórios que também contêm dados, antes de adotar releases imutáveis, ou quando o estado de produção não tem localização declarada.
+description: Planear a migração de estado ou artefactos identificados que residem num checkout ou volume implícito sujeito a substituição, limpeza ou recriação. Usa apenas quando esses dados estão confirmados nesse âmbito; consistência, ausência de perda e recuperação dependem de validação específica da aplicação.
 ---
 
-# Migrar estado sem perder nada
+# Migrar estado com recuperação verificada
 
-Enquanto houver dados dentro do diretório do código, nenhum esquema de deploy
-é seguro: substituir código arrisca levar os dados atrás. Esta é a parte lenta
-e irreversível de qualquer modernização, por isso faz-se primeiro e devagar.
+Estado dentro de um checkout ou volume implícito pode ser perdido quando o
+workflow substitui, limpa ou recria esse caminho. O risco depende do método de
+deploy e das garantias de persistência existentes; confirma o comportamento
+antes de concluir que todos os deploys são inseguros. Se a migração for
+necessária, trata-a como uma operação de dados com cutover e recuperação
+planeados e validados conforme a aplicação; este procedimento não garante, por
+si só, ausência de perda nem rollback consistente.
 
 ## Inventário antes de tudo
 
 Lista cada família de estado com: caminho atual, tamanho, quem escreve, quem
 lê, e a variável de configuração que passará a defini-lo. Inclui o que ninguém
 menciona: caches, cursores de sincronização, bases locais de ferramentas,
-homes de serviços, volumes de contentores sem nome.
+  homes de serviços e volumes de contentores sem nome apenas quando estejam
+  dentro do âmbito confirmado e possam ser afetados.
 
-Declara os caminhos num único ficheiro de configuração root-owned, carregado
-pelas units. A aplicação passa a consumir nomes de variáveis, nunca caminhos.
-É isso que torna possível uma segunda máquina.
+Se a plataforma usar configuração central e units systemd, declara os caminhos
+no mecanismo aprovado, com permissões adequadas ao modelo de privilégio. Uma
+configuração root-owned carregada pela unit é uma opção, não um requisito
+universal. Separa a decisão sobre localização da configuração específica do
+runtime.
 
 ## Ordem
 
-1. O que é fácil de repor (caches, diagnósticos, cursores).
-2. Artefactos e ficheiros de resultados.
-3. Bases embebidas e estado de ferramentas.
-4. A base de dados principal, por último, e só com um dump fresco verificado
-   fora da máquina.
+1. Classifica o estado por criticidade, consistência e possibilidade de
+  reconstrução; caches e cursores também podem exigir validação do consumidor.
+2. Planeia dados transacionais e bases embebidas segundo as garantias do
+  formato e da aplicação.
+3. Trata a base de dados principal com o mecanismo de backup/migração suportado
+  pela aplicação e valida um restore conforme a política local.
 
-Cada família é um ponto de paragem seguro. O trabalho pode parar entre
-famílias durante semanas sem deixar o sistema incoerente.
+Cada família só é um ponto de paragem se o sistema continuar consistente nesse
+estado intermédio. Documenta dependências, escritas pendentes e condições para
+retomar antes de dividir a operação.
 
 ## Mecânica por família
 
-1. Inventário e checksums (device, inode, contagens, bytes, hash da árvore).
-2. Parar os consumidores.
-3. `rename(2)` no mesmo filesystem. Nunca copiar e apagar: não há janela em
-   que os dados existam só num sítio incompleto.
-4. Deixar symlink de compatibilidade no caminho antigo.
-5. Reler o inventário e comparar com o de antes.
-6. Arrancar os consumidores e verificar.
-7. Escrever um receipt antes de qualquer restart, para o rollback ter base.
+1. Inventaria caminhos relativos, contagens, bytes, checksums e metadados
+  relevantes (proprietário e modos, quando aplicável). Device e inode ajudam a
+  identificar a origem, mas mudam necessariamente entre filesystems e não
+  devem ser tratados como igualdade após a cópia.
+2. Confirma a plataforma, filesystem/volume, ferramenta de cópia, proprietários,
+  permissões e autorização do operador. Determina se os consumidores precisam
+  de ser parados ou podem ser sincronizados por snapshot/replicação suportados.
+3. No mesmo filesystem, `rename(2)` pode fornecer um cutover atómico quando
+  origem, destino e aplicação o permitem. Entre filesystems/volumes, copia os
+  dados preservando os metadados necessários, mantém a origem intacta e
+  verifica a cópia por conteúdo e inventário antes do cutover. Não assumas que
+  copiar é inseguro nem apagues a origem como parte da cópia inicial.
+4. Se necessário e suportado, mantém um symlink de compatibilidade apenas após
+  verificar que o serviço pode usá-lo e que o caminho não expõe dados.
+5. Para dados mutáveis, quiesce os escritores ou faz uma sincronização final
+  consistente segundo a aplicação; repete a verificação de conteúdo. Não
+  compares device/inode entre filesystems; compara caminhos relativos, hashes,
+  tamanhos e metadados que a migração deve preservar.
+6. Efetua o cutover apenas com autorização. Mantém a origem recuperável até o
+  destino e o consumidor estarem validados durante a janela definida.
+7. Regista plano, inventário, configuração anterior e checkpoints antes de
+  qualquer passo disruptivo, no mecanismo de auditoria disponível; um receipt
+  estruturado é opcional e depende do workflow.
 
-Em falha, reverter os renames já feitos e repor a configuração anterior.
+Se o cutover falhar, repõe a configuração anterior somente se isso continuar
+consistente com as escritas feitas desde o cutover. Se houver dados novos no
+destino, reconcilia-os conforme a aplicação; um symlink de volta não desfaz
+essas escritas.
 
 ## Symlinks de compatibilidade
 
-São uma ponte, não o destino. Existem porque artefactos antigos e ficheiros
-históricos contêm caminhos absolutos. Regras: só os explicitamente revistos,
-registados no receipt, e nunca reescrever dados históricos no mesmo movimento.
+São uma ponte, não o destino. Usa-os apenas quando consumidores confirmados
+dependam de caminhos absolutos e a plataforma os suporte. Regista a decisão no
+mecanismo de auditoria disponível e nunca reescrevas dados históricos no mesmo
+movimento.
 
 ## Bases de dados em contentores
 
-Um volume gerido pelo motor de contentores não pode passar a bind mount por
-symlink. Trata-a como transação separada:
+Se o serviço usar um motor de contentores, confirma o engine, versão, driver e
+semântica de volume antes de escolher o método; não generalizes comportamento de
+um engine para outro. Trata uma mudança de volume como uma migração separada:
 
-- dump lógico fresco, copiado para fora e **relido** antes de começar;
-- imagens fixadas por ID exato, nunca por tag;
-- definições do contentor antigo e do novo instaladas root-owned, para o
-  rollback não depender de um checkout;
-- `create_host_path: false` (ou equivalente), para um caminho errado falhar em
-  vez de criar uma base vazia que parece saudável;
+- usa um dump lógico fresco, copiado para fora e **relido**, apenas quando o
+  engine e a aplicação o suportarem para este
+  estado e a consistência do dump estiver confirmada. Caso contrário, usa um
+  snapshot ou backup físico consistente suportado pela aplicação, e valida o
+  restore antes do cutover;
+- imagens fixadas por digest/ID quando a política exigir reprodução exata;
+- definições antigas e novas guardadas num local controlado, root-owned apenas
+  se a política e a plataforma o exigirem;
+- uma opção como `create_host_path: false` apenas se o engine e a versão a
+  suportarem e o comportamento for confirmado;
 - preservar o volume antigo até haver prova de vida do novo.
 
 ## Depois de mover
 
 - Os backups têm de incluir os caminhos novos, e o teste de restauro tem de
   correr **depois** da migração; o anterior já não prova nada.
-- Programas de backup e recuperação não devem correr a partir do checkout.
-  Instala-os root-owned, ou continuas a executar código que não é o revisto.
-- Se os serviços ainda correrem com a identidade antiga, a ponte de acesso
-  (um grupo suplementar temporário) fica registada com obrigação de remoção.
+- Confirma que programas de backup e recuperação executam código revisto a
+  partir de uma localização controlada; root-owned é uma opção conforme a
+  plataforma e o modelo de ameaça.
+- Se uma identidade temporária for necessária para compatibilidade, usa-a só
+  com autorização explícita, após confirmar a política de menor privilégio e
+  documentar prazo, âmbito e remoção. Um grupo suplementar é apenas uma opção;
+  não o uses como ponte padrão.
 
 ## Quando não aplicar
 

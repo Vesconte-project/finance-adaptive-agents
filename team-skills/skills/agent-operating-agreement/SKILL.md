@@ -1,38 +1,46 @@
 ---
 name: agent-operating-agreement
-description: Como um agente deve trabalhar num servidor de produção partilhado com humanos: tamanho dos lotes, o que verificar antes de pedir alguma coisa, o que reportar e o que decidir sozinho. Usa ao iniciar um agente em trabalho de infraestrutura, ao definir o modo de trabalho, ou quando o ciclo de idas e voltas está a consumir demasiado tempo.
+description: Definir um acordo de trabalho para um agente que vai planear alterações autorizadas num servidor Linux de produção partilhado, incluindo revisão, verificações no host e reporte ao operador. Usa quando o utilizador pede explicitamente esse acordo; não para tarefas locais ou infraestrutura de desenvolvimento.
 ---
 
 # Acordo de trabalho para um agente em produção
 
-Práticas aprendidas numa migração de produção com revisão humana. Aplica-as
-quando o utilizador e as instruções do repositório adotarem este modo de
-trabalho; esta Skill não concede acesso nem substitui essas instruções.
+Estas práticas só se aplicam quando o utilizador e as instruções do repositório
+adotarem este modo de trabalho, e apenas aos mecanismos existentes no ambiente.
+Esta Skill não concede acesso, autorização ou capacidade para alterar o host.
 
 ## Lotes
 
 O custo dominante é a ida e volta, não o trabalho. Cada pedido a um humano
 custa-lhe contexto e tempo.
 
-- Agrupa mudanças com o mesmo rollback num pedido de revisão: merge + `plan` +
-  `apply`, quando o utilizador autorizou a execução.
+- Agrupa mudanças com o mesmo rollback num pedido de revisão. Inclui `merge`,
+  `plan` ou `apply` apenas quando esses passos fazem parte do fluxo existente e
+  foram autorizados; não combines aprovação e execução por defeito.
 - Resolve descobertas dentro do âmbito aprovado e comunica cedo alterações
   materiais de risco, janela ou pressupostos.
-- Podes encadear commits no mesmo branch antes do merge.
-- Todas as mudanças no host de um lote vão num único script root.
+- Só cria ou encadeia commits quando o utilizador autorizou essa ação e o fluxo
+  aprovado do repositório a permite.
+- Se o fluxo aprovado usar um script root para alterar o host, mantém nesse
+  script as mudanças relacionadas do lote; não introduzas esse mecanismo se ele
+  não existir.
 - Lotes grandes nos **pedidos**, não no risco. O risco controla-se com
   preflight, verificação e rollback por componente.
 
 ## Antes de entregar
 
-- Corre **todas** as verificações que o `apply` fará, em modo leitura, contra o
-  host real. Uma verificação que nunca correu contra a máquina não está
-  testada, e foi assim que três `apply` falharam seguidos.
-- Corre a suite no ambiente do CI, não só no host. Se os testes dependem de
-  contas Unix locais, simula a ausência delas.
-- Parte do estado **instalado**, nunca do ficheiro do repositório. Compara
-  hashes antes de escrever uma unit nova.
-- Verifica o que o utilizador usa, não só o health interno.
+- Se o operador autorizou acesso ao host e as verificações são aplicáveis,
+  executa-as em modo de leitura contra o alvo real. Caso contrário, identifica
+  o que não foi verificado e fornece os passos para o operador.
+- Se existir um workflow de CI aplicável, usa-o para validar o ambiente de
+  execução relevante. Caso contrário, indica que essa validação não foi
+  executada e porquê. Simula a ausência de contas Unix locais apenas quando os
+  testes dependem delas.
+- Parte do estado instalado quando o fluxo altera artefactos já instalados e
+  esse estado pode ser inspecionado com autorização. Compara hashes quando o
+  processo de instalação os usa como contrato.
+- Quando existir uma interface de utilizador relevante e houver autorização,
+  verifica o resultado por essa interface, não apenas pelo health interno.
 
 ## Reportar
 
@@ -44,7 +52,8 @@ custa-lhe contexto e tempo.
 
 ## Decidir
 
-- Com default sensato: decide, regista como assunção no PR, e continua.
+- Com default sensato: decide e documenta a assunção no artefacto de revisão
+  aplicável, se o fluxo do repositório o prever, e continua.
 - Sem default: pergunta, mas só nas que são irreversíveis, de política, ou que
   mudam a forma de trabalhar do humano (credenciais, grupos, acessos).
 - Quando uma regra local do repositório te bloquear, pára e reporta em vez de
@@ -63,11 +72,8 @@ custa-lhe contexto e tempo.
 
 ## Rever trabalho de outro agente
 
-Trabalha pela mesma ordem: o que muda no host, quem corre o quê, o efeito nos
-outros serviços, o rollback, as verificações, e só no fim o código. Reproduz
-as suspeitas com sondas em vez de opinar. Ver `verify-against-the-host`.
-
-## Quando relaxar
-
-Num protótipo ou numa máquina descartável, mantém três coisas e larga o resto:
-preflight que recusa, backup antes de escrever, e rollback testado.
+Para alterações ao host, revê o delta face ao estado instalado, a identidade
+que executa cada passo, o efeito noutros serviços, o rollback e as verificações.
+Só executa sondas no host se a plataforma corresponder, o operador autorizar o
+acesso e a sonda não ultrapassar o âmbito aprovado; caso contrário, documenta
+o comando e deixa a execução para o operador.

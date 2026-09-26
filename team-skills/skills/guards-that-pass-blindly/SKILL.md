@@ -1,6 +1,6 @@
 ---
 name: guards-that-pass-blindly
-description: Verificar que uma verificação de segurança consegue mesmo ver o que diz verificar. Usa ao rever scanners de segredos, validadores, gates, health checks e qualquer guarda cujo resultado seja PASS; quando um PASS parece bom demais; quando uma regra de deteção depende de nomes; ou antes de confiar num guarda que nunca disse NÃO.
+description: Rever scanners de segurança ou gates em que um `PASS` pode ocultar inputs obrigatórios não lidos ou não analisados, zero valores extraídos quando eram esperados, ou deteção incompleta de segredos. Não para health checks comuns nem validadores sem esse risco específico.
 ---
 
 # Um guarda que não vê passa sempre
@@ -10,8 +10,8 @@ consegue **ler** na máquina onde corre. Entre as duas coisas cabe a falha mais
 perigosa deste tipo de sistema: a verificação que devolve `PASS` porque não
 conseguiu abrir nada.
 
-Caso real, num scanner de segredos que comparava cada blob de um repositório
-com os segredos verdadeiros do host:
+Exemplo ilustrativo de um scanner de segredos que comparava blobs de um
+repositório com valores de referência protegidos:
 
 ```python
 try:
@@ -20,58 +20,68 @@ except (FileNotFoundError, PermissionError, IsADirectoryError):
     continue        # <-- aqui morre a verificação, em silêncio
 ```
 
-O serviço corria como uma identidade de backup. Os cinco ficheiros de segredos
-configurados eram todos `0600`, de `root` ou de outro utilizador. Resultado: a
-lista de segredos a comparar ficava **vazia**, e o scanner reportava que não
-encontrou nenhum segredo — o que era verdade e não significava nada.
+Neste cenário, o serviço corria com uma identidade sem acesso aos ficheiros
+obrigatórios. A lista de valores comparáveis ficava **vazia**, mas o scanner
+reportava que não encontrou segredos.
 
 ## As três perguntas
 
-**1. Com que identidade corre, e consegue ler os inputs?**
+**1. Que runtime executa o guarda, com que identidade e quais inputs são
+obrigatórios?** Confirma a configuração e o contrato do próprio guarda antes de
+interpretar permissões. Só uses comandos systemd se o alvo for Linux e o
+serviço for realmente gerido por systemd; noutros runtimes, identifica as
+interfaces e evidências equivalentes.
 
 ```bash
 systemctl show UNIT -p User -p Group --value
 id IDENTIDADE
-for f in $(lista de inputs); do stat -c '%a %U:%G %n' "$f"; done
+stat -c '%a %U:%G %n' INPUT_PATH
 ```
 
-Modo `0600` de outro dono significa zero. Não presumas que um serviço "do
-sistema" lê ficheiros do sistema.
+Repete `stat` apenas para inputs relevantes, enumerados a partir do manifesto do
+guarda sem word-splitting ou globs que percam caminhos com espaços. Um modo
+`0600` de outro dono pode impedir a leitura, mas confirma a identidade, ACLs,
+mounts e runtime efetivos.
 
-**2. Quantos inputs viu, e quantos valores extraiu?** Um guarda tem de
-publicar essa contagem, e quem revê tem de a exigir. `PASS` sem denominador
-não é resultado. No caso real, a correção fez o guarda imprimir
-`inputs=31 comparable_values=37` — e é isso que se lê primeiro, antes do `PASS`.
+**2. Que inputs e resultados exige o contrato do guarda?** Exige evidência
+proporcional ao contrato, como contagens de inputs obrigatórios lidos e
+resultados analisados. Um `PASS` não deve esconder inputs obrigatórios em falta
+ou ilegíveis. Distingue-os dos opcionais, que devem aparecer explicitamente
+como opcionais/ignorados. Uma contagem de valores extraídos só é obrigatória
+quando o contrato prevê um mínimo; documenta quando zero resultados é válido.
 
-**3. O que acontece quando um input falta ou não abre?** A única resposta
-aceitável é **falhar**. Um `continue` num `except PermissionError` transforma
-uma verificação em decoração.
+**3. O que acontece quando um input obrigatório falta ou não abre?** O guarda
+deve reportar a condição e não apresentar um `PASS` como se a verificação
+estivesse completa. Um input opcional pode ser omitido se essa possibilidade
+estiver declarada no contrato e no resultado. Um `continue` silencioso num
+`except PermissionError` oculta a diferença.
 
-## Corolário: um input que produz zero valores é um input ilegível
+## Distingue zero valores de falha de leitura
 
-Se um ficheiro abre mas o extrator não tira nada dele — formato diferente,
-chave com outro nome, comentários — o efeito é idêntico a não o ter lido.
-Trata os dois casos da mesma maneira: falha, com o caminho no erro.
+Um ficheiro que abre e produz zero valores pode estar vazio legitimamente ou
+ter um formato que o parser não reconhece. Distingue esses resultados segundo o
+contrato do input; não trates todo zero como ilegível nem como falha.
 
 Isto apanha uma classe inteira de erros de parser: um ficheiro de **valor nu**
 sem `chave=`, um `.ini` com secções, um ficheiro de autenticação de proxy, uma
-configuração de cliente de armazenamento. Cada formato precisa do seu parser, e
-cada parser precisa de prova de que devolveu pelo menos um valor.
+configuração de cliente de armazenamento. Cada formato precisa do parser
+adequado e de um resultado que permita distinguir sucesso vazio, dados
+analisados e formato inválido. Exige pelo menos um valor apenas quando o
+contrato desse input o requer.
 
 ## Deteção por nome é uma lista negra que perde sempre
 
 Uma regra como `(?:TOKEN|SECRET|PASSWORD|API_KEY|DATABASE_URL|DSN)$` parece
-razoável e falha em silêncio no primeiro nome que alguém inventar. Casos reais
-que escaparam a essa regra exata:
+razoável e pode falhar no primeiro nome que alguém inventar. Exemplos de nomes
+que uma regra por sufixo pode não abranger:
 
 - `PREFECT_API_DATABASE_CONNECTION_URL` — termina em `CONNECTION_URL`
 - `DATA_OPS_ALERT_WEBHOOK_URL` — termina em `WEBHOOK_URL`
 
-Inverte: **classifica explicitamente cada chave de cada input** como segredo ou
-público, e **falha quando aparece uma chave sem classificação**. A regra por
-sufixo passa a ser conveniência, não defesa. O custo é um ficheiro de política
-para manter; o retorno é que um segredo novo não pode entrar sem alguém decidir
-o que ele é.
+Para um scanner baseado em chaves, uma política explícita de classificação pode
+ser adequada. Aplica-a apenas aos formatos, inputs e garantias de cobertura que
+o scanner suporta; define o tratamento de chaves desconhecidas no contrato, em
+vez de assumir que todo guarda precisa de classificar todas as chaves.
 
 ## Quando o guarda não pode ler, não baixes as permissões
 
@@ -89,28 +99,33 @@ superfície. Alternativas, por ordem de preferência:
    equivalente ao próprio segredo.
 3. Alargar o acesso — último recurso, e com o custo escrito.
 
-No systemd, o prefixo `!` num `ExecStartPre=`/`ExecStartPost=` corre essa etapa
-como root **mantendo** o sandbox da unit. E, em `Type=oneshot`, o
-`ExecStartPost=` não corre se o `ExecStart=` falhar — o que é exatamente o que
-torna seguro um desenho onde a fase final privilegiada é a única que autoriza o
-passo irreversível.
+Se o alvo for Linux/systemd, confirma na versão instalada a semântica de
+`ExecStartPre=`, `ExecStartPost=` e dos prefixos de privilégio antes de propor
+esse desenho. A verificação que autoriza uma ação irreversível tem de ocorrer
+antes dessa ação, por exemplo num precheck apropriado seguido do comando
+protegido. `ExecStartPost=` corre depois de `ExecStart=` e não pode autorizar
+nem impedir retroativamente uma ação já executada; só pode condicionar passos
+posteriores que dependam do resultado da unit. Este desenho não se aplica
+automaticamente a outros runtimes.
 
-## Prova que o privilégio e a leitura acontecem de facto
+## Recolhe evidência do privilégio e da leitura
 
 Não aprove um desenho destes por doutrina. Faz o guarda **imprimir** o que
 provaria a dúvida, e exige essa linha no journal:
 
 ```
 source_secret_phase=pre euid=0 probe=1
-source_secret_probe phase=pre inputs=31 comparable_values=37 verdict_write=PASS
+source_secret_probe phase=pre required_inputs=<count> analyzed_values=<count> verdict_write=PASS
 ```
 
-Melhor ainda: uma **unit de prova transitória**, em `/run/systemd/system`, com
-as mesmas diretivas de sandbox da unit de produção e `ReadWritePaths` mais
-estreito, arrancada e removida pelo próprio lote antes de instalar nada.
-Se o PASS acontece ali, acontece em produção.
+Se o alvo usar Linux/systemd e essa evidência for necessária, uma unit de prova
+transitória em `/run/systemd/system` pode testar parte das diretivas de sandbox.
+Só a cries com autorização e um plano de limpeza. O resultado é evidência, não
+prova automática de equivalência: antes de extrapolar para produção, confirma
+runtime, identidade, inputs, mounts, versões e restantes condições efetivas.
+Noutros runtimes, usa o mecanismo de prova equivalente.
 
-Duas armadilhas dessa unit, ambas encontradas na prática:
+Duas considerações específicas dessa unit:
 
 - sem `RemainAfterExit=yes`, uma unit transitória que ninguém referencia é
   **descarregada** ao ficar inativa, e o `InvocationID` desaparece — o
@@ -119,11 +134,13 @@ Duas armadilhas dessa unit, ambas encontradas na prática:
 - a ordem tem de ser: arrancar, ler o `InvocationID`, verificar o journal
   dessa invocação, **parar**, remover o ficheiro, `daemon-reload`.
 
-## Um achado revisto deixa-se passar uma vez, nunca por caminho
+## Exceções para scanners de objetos versionados
 
-Quando um guarda bloqueia algo que já foi revisto e considerado inofensivo, a
-tentação é pôr o caminho numa allowlist. Isso cega aquele caminho para sempre.
-A exceção correta é presa a **tudo** o que a identifica:
+Para scanners que reveem objetos versionados com identificadores, caminhos e
+fingerprints estáveis, uma exceção pode ser presa aos atributos que identificam
+aquele achado. Não uses este mecanismo como regra geral para outros tipos de
+guardas. Evita allowlists permanentes por caminho; quando aplicável, associa a
+exceção a:
 
 - o **ponto de partida** exato (cursor, base, versão) — e torna-se inerte
   quando ele avança;

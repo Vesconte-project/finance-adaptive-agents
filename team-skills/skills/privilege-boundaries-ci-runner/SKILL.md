@@ -1,28 +1,32 @@
 ---
 name: privilege-boundaries-ci-runner
-description: Separar identidades num servidor onde correm CI runners, agentes de IA e serviços de produção, e decidir que credenciais cada uma recebe. Usa quando um runner de CI vai correr na máquina de produção, quando se desenha quem pode fazer deploy, ou quando um script propõe copiar chaves SSH ou dar grupos a uma identidade.
+description: Rever fronteiras de privilégio quando um runner CI, agente ou automação influenciável partilha um host de produção ou credenciais de produção com serviços/deploys. Usa para separar essas identidades e limitar o canal de deploy; não para desenho genérico de deploys ou gestão de chaves SSH isolada.
 ---
 
 # Fronteiras de privilégio
 
-A pergunta certa não é "quem tem sudo", é **"se este processo for comprometido,
-o que é que alcança?"**. Num servidor típico, a resposta é quase sempre "tudo",
-por razões que não são óbvias.
+A pergunta certa não é apenas "quem tem sudo", é **"se este processo for
+comprometido, que recursos consegue alcançar com as permissões efetivas?"**. A
+resposta depende da configuração verificada no host, dos serviços e das
+credenciais disponíveis; não a infiras de um rótulo ou grupo isolado.
 
 ## Root sem parecer root
 
-Pertencer aos grupos `docker` ou `lxd` é equivalente a root: um contentor com
-o disco do host montado dá acesso completo. Um sudoers estreito não é fronteira
-nenhuma enquanto a mesma identidade tiver Docker.
+Pertencer a grupos como `docker` ou `lxd` pode permitir controlo equivalente a
+root quando o daemon, a configuração e os mounts permitem acesso ao host. A
+membership, por si só, não prova esse acesso: confirma o modo do daemon,
+restrições e controlos efetivos antes de concluir.
 
 ```bash
 getent group docker lxd
 ```
 
-Isto aplica-se aos agentes de IA. Se o agente corre com o teu utilizador, tem
-root efetivo, as tuas chaves SSH, os segredos dos serviços e os backups.
-Reconhece-o explicitamente, ou separa-o. Não finjas que a password do sudo
-resolve.
+Este exemplo só se aplica se o host for Linux e tiver `getent`; valida a
+configuração real do daemon e dos mounts antes de inferir capacidades.
+
+Em agentes e runners, verifica as credenciais, grupos e recursos realmente
+acessíveis à identidade. Não infiras root efetivo nem acesso a chaves, segredos
+ou backups apenas pelo nome de utilizador ou pela existência de sudo.
 
 ## Identidades mínimas para um host destes
 
@@ -34,51 +38,64 @@ resolve.
 | backup | dump, restauro, cópias fora | acesso aos repositórios de código |
 | humano/agentes | desenvolvimento | (decisão explícita; é aqui que mora o risco) |
 
-Duas regras que valem mais do que parecem:
+Este modelo é ilustrativo; adapta identidades, credenciais e fronteiras às
+capacidades do host, plataforma de deploy, fornecedor Git e política local.
 
-1. **A identidade que constrói nunca recebe credencial de escrita.** Instalar
-   dependências executa código de terceiros. Com uma chave de escrita, uma
-   dependência comprometida escreve no repositório que define a infraestrutura.
-2. **Os serviços não podem escrever nas releases.** Se o serviço corre com a
-   identidade dona da release, pode sempre mudar as permissões e reescrever o
-   seu próprio código. Selar como `root:<grupo>` resolve, e continua a permitir
-   construir a seguir, desde que o motor corra como root.
+Princípios a validar no cenário concreto:
+
+1. Se o processo de build executar dependências ou código não confiável, separa
+  a publicação de credenciais de escrita desse processo. Concede escrita só a
+  uma etapa autorizada que não execute código arbitrário.
+2. Um serviço não deve poder alterar código executável que consome, salvo se
+  isso fizer parte explicitamente do modelo. Usa a propriedade e os modos
+  exigidos pela política do host; `root:<grupo>` e um motor root são opções
+  específicas, não soluções padrão.
 
 ## O canal de deploy sem sudo
 
-Num runner endurecido, `sudo` não funciona (`NoNewPrivileges`) e, mesmo que
-funcionasse, `ProtectSystem=strict` impediria o trabalho. O padrão que
-funciona:
+Se o host Linux usar systemd e polkit, e a configuração instalada confirmar
+que o runner não pode executar a operação privilegiada diretamente, um canal
+de pedidos pode ser uma opção. `NoNewPrivileges` e `ProtectSystem` têm efeitos
+dependentes da unit; não os infiras sem inspecionar a versão e configuração
+efetivas. O exemplo seguinte não é universal:
 
-1. O runner escreve um pedido (o SHA) num ficheiro dentro do seu próprio
-   diretório gravável.
-2. O runner pede `systemctl start deploy@<componente>.service` — por D-Bus, que
-   não precisa de setuid e portanto convive com `NoNewPrivileges`.
-3. Uma regra polkit autoriza **só** aquele utilizador, **só** o verbo `start`,
-   **só** as instâncias de uma lista fechada.
-4. A unit root lê o pedido com `O_NOFOLLOW` a partir de um descritor do
-   diretório, exige dono, modo, tamanho e formato, e confirma que o SHA é o
-   topo atual do branch remoto antes de fazer o que quer que seja.
+1. O runner envia um pedido autenticado e limitado ao componente e SHA
+  permitidos, usando a interface disponível no host.
+2. A política identifica o principal exato do runner e restringe a ação a
+  unidades/componentes de uma allowlist, sem seleção de unidade, argumentos
+  ou instâncias arbitrárias de um template.
+3. O pedido tem expiração e consumo único, com prevenção de replay. O validador
+  confirma a proveniência do CI e a política de SHA apropriada.
+4. A validação e execução ficam ligadas ao mesmo objeto imutável; impede que o
+  SHA ou o conteúdo mude entre validação e execução (TOCTOU).
+5. Um executor privilegiado realiza apenas a etapa necessária após preflight e
+  autorização. Não executa builds ou dependências não confiáveis como root.
 
-O resultado: o runner não escolhe comandos, não passa argumentos, não corre
-como root, e mantém o sandbox completo.
+Polkit, systemd, D-Bus, ficheiros de pedido e sandbox são exemplos. Valida as
+regras instaladas e testa permissões positivas e negativas, seleções arbitrárias,
+replay, SHA alterado após validação e proveniência do resultado CI antes de usar
+qualquer canal em produção.
 
 ## Credenciais
 
-- Chaves por repositório, de leitura, com alias SSH explícito por repositório.
-  Nada de uma chave pessoal a servir tudo.
-- Confirma se uma chave tem escrita antes de a copiar para outra identidade
-  (`git push --dry-run` para um branch que nunca vais criar).
+- Usa credenciais de menor privilégio por identidade quando o provider e a
+  plataforma o suportarem; uma chave por repositório é uma opção, não uma regra.
+- Verifica permissões efetivas nas definições, API ou auditoria do provider para
+  o principal e repositório exatos. `git push --dry-run` é apenas consultivo:
+  hooks, branches protegidos e políticas do provider tornam o resultado
+  inconclusivo. Só faz uma escrita de teste numa ref descartável se for
+  explicitamente autorizada e houver limpeza validada.
 - Tokens de longa duração fora de homes acessíveis a runners e agentes. Se
   existir um temporário, tem data para morrer e alguém que a cumpra.
-- Segredos em ficheiros root-owned fora dos checkouts, `0600`, carregados pela
-  unit. Um `.env` dentro de um repositório é um acidente à espera.
+- Mantém credenciais fora de locais acessíveis a automação não autorizada, de
+  acordo com o secret manager e a política do host. Ficheiros root-owned `0600`
+  carregados por systemd são uma opção condicionada, não um requisito geral.
 
 ## Topologia de chaves: a mesma chave em quatro sítios
 
-Antes de mexer numa credencial, faz o **mapa** dela. Num host destes, a mesma
-chave privada reaparece em sítios que ninguém enumera de cabeça. Caso real, uma
-só chave de um repositório vivia em quatro lugares:
+Antes de mexer numa credencial, mapeia onde está configurada e quais identidades
+a podem usar. A lista abaixo é um exemplo de uma topologia possível, não uma
+enumeração exaustiva nem uma afirmação sobre todos os hosts:
 
 - `~/.ssh/` da conta humana (onde tu e os agentes empurram);
 - `/var/lib/<serviço>/.ssh/` da identidade de serviço (o motor de deploys);
@@ -86,79 +103,77 @@ só chave de um repositório vivia em quatro lugares:
   em cada execução de flow);
 - `/etc/<projeto>/<monitor>-ssh/` (um verificador de saúde).
 
-Sonda, e compara por fingerprint em vez de por nome de ficheiro:
-
-```bash
-for f in ~/.ssh/*.pub; do printf '%-40s %s\n' "$f" "$(ssh-keygen -lf "$f" | awk '{print $2}')"; done
-sudo sh -c 'for f in /var/lib/*/.ssh/* /etc/*/*ssh*/*.key; do
-  printf "%-60s %s\n" "$f" "$(ssh-keygen -lf "$f" 2>/dev/null | awk "{print \$2}")"; done'
-```
+Descobre as fontes a partir da configuração efetiva, identidade do processo,
+secret manager e provider. Usa comandos de inventário apenas quando a plataforma
+e a autorização o permitirem; não assumes `/var/lib`, `/etc`, `sudo`, globs ou
+um filesystem específico. Enumera caminhos sem perder espaços e compara chaves
+públicas por fingerprint; nunca imprimas material privado.
 
 Nomes diferentes podem ser a mesma chave; nomes iguais podem ser chaves
-diferentes. Só o fingerprint decide.
+diferentes. O fingerprint identifica a chave pública, mas não prova quem pode
+ler a privada nem quais permissões o provider concedeu.
 
 ## Escrita concedida a ti é escrita concedida ao runtime
 
-A consequência que mais custa, e que não se vê no painel do fornecedor: se a
-chave é **partilhada** entre a tua conta e a identidade de serviço, ligar-lhe
-escrita "temporariamente" para tu poderes publicar dá escrita **também** ao
-serviço. E se essa identidade é a que corre os workers do orquestrador, então
+A consequência depende de acesso efetivo: se a identidade de serviço consegue
+ler e usar uma chave **partilhada** e alcançar o provider, conceder escrita a
+essa chave pode dar escrita **também** ao serviço. Se essa identidade corre
+workers, então
 código de um trabalho agendado pode empurrar para o ramo principal — o mesmo
 ramo que o validador de deploys aceita como verdade para ativar releases. Toda a
 revisão que construíste passa a ter uma porta ao lado.
 
-O desenho correto, por repositório:
+Um padrão possível, quando o provider e a política local o suportarem:
 
 | Identidade | Chave | Permissão |
 | --- | --- | --- |
-| serviço que clona em runtime | própria | **só leitura** |
-| humano e agentes | própria, separada | escrita |
+| serviço que só clona em runtime | credencial limitada ao clone | leitura, se suficiente |
+| etapa de publicação autorizada | identidade/credencial aprovada pelo provider | apenas as permissões necessárias |
+| humanos e agentes | mecanismo definido pela política de acesso | sem separação por chave obrigatória; limitar por função e capacidade efetiva |
 
-E a sequência que não deixa janela sem escrita: adiciona primeiro a chave nova
-de escrita, prova com `push --dry-run`, e **só depois** retira a escrita à
-partilhada. Muitos fornecedores não deixam editar o modo de uma chave: obriga a
-apagar e recriar, por isso obtém a pública **antes** de apagar, e faz os dois
-passos seguidos — no intervalo, o runtime não clona.
+O objetivo é reduzir o acesso efetivo de cada identidade, não exigir chaves
+SSH distintas quando a plataforma oferece outro controlo equivalente.
 
-Prova o resultado nos dois sentidos, com a identidade do serviço:
+Antes de alterar permissões, confirma no provider a sequência suportada, os
+consumidores e o impacto durante a transição. Não assumes que uma chave pode ser
+convertida nem que um dry-run prova o estado final. Verifica leitura e escrita
+pela interface de permissões do provider ou, se autorizado, por uma escrita
+real numa ref descartável; `ls-remote` prova apenas leitura.
 
-```bash
-sudo -u SERVICO env GIT_SSH_COMMAND="/usr/bin/ssh -F /var/lib/SERVICO/.ssh/config -o BatchMode=yes" \
-  git ls-remote REMOTO main            # tem de devolver o SHA
-# e um push --dry-run a partir de um clone temporário: tem de ser recusado
-```
+## Chaves duplicadas podem interromper um runtime
 
-## Apagar uma chave "duplicada" parte o runtime
+Duas chaves de leitura no mesmo repositório podem parecer desarrumação e uma
+delas pode pertencer a um serviço. Removê-las sem inventário pode interromper
+um clone ou restart futuro; confirma consumidores e cronologia de uso antes de
+agir.
 
-Duas chaves de leitura no mesmo repositório parecem desarrumação e às vezes uma
-delas é a do serviço. Apagar as duas deixa o sistema a funcionar — até ao
-próximo clone. Num caso real, o serviço só voltou a precisar da chave onze horas
-depois, e o que rebentou foi um deploy; e o serviço com o worker vivo **não podia
-ser reiniciado**, porque o arranque dele valida o acesso ao repositório.
-
-Antes de apagar qualquer credencial: mapeia por fingerprint, identifica de quem
-é cada uma, e guarda a pública. Se a privada existir no host e a pública não,
-`ssh-keygen -y -f privada` recupera-a — apagar o registo remoto não destrói nada
-localmente.
+Antes de apagar qualquer credencial, confirma consumidores, política do provider
+e recuperação. Só derives a chave pública a partir de uma privada com
+autorização para aceder ao segredo; não imprimas nem copies o material privado.
 
 ## Sequência segura para apertar isto
 
-1. Criar as identidades (não muda nada).
-2. Mover os segredos para fora das homes.
-3. Mudar os serviços de identidade, um de cada vez, com rollback.
-4. Substituir o runner por um isolado e provar um deploy real pelo canal novo.
-5. Só então retirar credenciais e grupos temporários, e confirmar que foram
-   retirados.
+1. Inventariar identidades, grupos, credenciais e efeitos no host segundo a
+  plataforma real.
+2. Propor identidades separadas e migração de segredos conforme a política de
+  acesso aplicável.
+3. Para mudanças autorizadas, definir rollback ou recuperação antes de alterar
+  serviços, credenciais ou canais de deploy.
+4. Validar o novo canal com um teste seguro e autorizado, se existir.
+5. Remover acessos anteriores só depois de confirmar consumidores, recuperação
+  e o resultado esperado.
 
-## Templates
+## Exemplo de implementação
 
-Para montar este canal, consulta
+Para avaliar um canal Linux/systemd/polkit, consulta
 [references/release-request-contract.md](references/release-request-contract.md).
-As units, a regra polkit, o cliente e o validador têm de ser implementados e
-testados no repositório que governa o host; este catálogo não os instala.
+É orientação ilustrativa, não um template instalável. As units, a regra polkit,
+o cliente e o validador têm de ser adaptados, implementados e testados no
+repositório que governa o host; este catálogo não os instala.
 
 ## Quando não aplicar
 
-Se ninguém além de ti toca na máquina e não há automação a correr código de
-fora, a separação de identidades tem pouco retorno. A partir do momento em que
-há um runner ou um agente, tem.
+Esta orientação não se aplica a runners isolados sem credenciais nem acesso ao
+host de produção. Usa-a quando CI, agentes ou automação influenciável partilham
+um host de produção ou credenciais de produção com serviços/deploys; confirma
+essa fronteira antes de recomendar mudanças.
