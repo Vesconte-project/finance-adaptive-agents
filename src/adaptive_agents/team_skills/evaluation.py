@@ -6,7 +6,7 @@ import statistics
 import time
 from dataclasses import dataclass
 
-from adaptive_agents import __version__
+from finance_adaptive_agents import __version__
 
 from .evidence import collect_terminal_context_evidence
 from .repository import TeamSkillsError

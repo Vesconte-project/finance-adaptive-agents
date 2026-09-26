@@ -3,10 +3,10 @@ from __future__ import annotations
 import tomllib
 from pathlib import Path
 
-from adaptive_agents import __version__
-from adaptive_agents.team_skills.canonical import load_canonical_catalog
-from adaptive_agents.team_skills.skill_quality import assessment_prompt
-from adaptive_agents.team_skills.skill_validation import load_candidate
+from finance_adaptive_agents import __version__
+from finance_adaptive_agents.team_skills.canonical import load_canonical_catalog
+from finance_adaptive_agents.team_skills.skill_quality import assessment_prompt
+from finance_adaptive_agents.team_skills.skill_validation import load_candidate
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,11 +15,11 @@ ROOT = Path(__file__).resolve().parents[1]
 def test_distribution_version_and_product_metadata_are_consistent():
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
 
-    assert project["name"] == "adaptive-agents"
+    assert project["name"] == "finance-adaptive-agents"
     assert project["version"] == __version__ == "0.22.1"
     assert project["readme"] == "README.md"
     assert project["scripts"]["team-skills"] == (
-        "adaptive_agents.team_skills.cli:main"
+        "finance_adaptive_agents.team_skills.cli:main"
     )
 
 
@@ -27,7 +27,7 @@ def test_bundled_agent_skills_are_declared_as_wheel_package_data():
     configuration = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 
     assert configuration["tool"]["setuptools"]["package-data"][
-        "adaptive_agents.team_skills"
+        "finance_adaptive_agents.team_skills"
     ] == ["skill_template/*/SKILL.md"]
 
 

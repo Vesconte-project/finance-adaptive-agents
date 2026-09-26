@@ -16,7 +16,7 @@ Claude does not require the teammate to consume them with Claude, for example.
 - Have at least one supported selector CLI installed and authenticated: Codex, Claude, or
   Copilot.
 - Ensure Git can access the configured canonical source. The current default uses the private
-  `adaptive-agents` Git repository over HTTPS.
+  `finance-adaptive-agents` Git repository over HTTPS.
 - Ensure the reviewed canonical Skill is appropriate for the repository and operator. The
   bundled catalog currently includes the `lets-encrypt-dns01-octodns-renewal` operational
   Skill; it is relevant only where the required getssl, DNS, and authorization preconditions

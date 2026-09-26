@@ -9,7 +9,7 @@ from pathlib import Path
 from threading import Lock
 from typing import Callable
 
-import adaptive_agents.admission_control as native
+import finance_adaptive_agents.admission_control as native
 
 from .canonical import CanonicalCatalog, CanonicalSkill
 from .consumer import ConsumerSource, default_consumer_source, validate_catalog_path, validate_source_url

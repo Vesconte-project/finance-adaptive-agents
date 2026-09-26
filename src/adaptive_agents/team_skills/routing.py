@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Callable
 
-import adaptive_agents.admission_control as native
+import finance_adaptive_agents.admission_control as native
 
 from .canonical import CanonicalCatalog, load_canonical_catalog
 from .evidence import RepositorySkillsEvidence

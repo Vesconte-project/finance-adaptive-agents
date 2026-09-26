@@ -7,8 +7,8 @@ from datetime import datetime, timezone
 
 import pytest
 
-import adaptive_agents.admission_control as native
-from adaptive_agents.admission_control.writer import AuditWriteError, write_audit_bundle
+import finance_adaptive_agents.admission_control as native
+from finance_adaptive_agents.admission_control.writer import AuditWriteError, write_audit_bundle
 
 
 NOW = datetime(2026, 9, 1, 12, 0, tzinfo=timezone.utc)

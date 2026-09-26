@@ -5,8 +5,8 @@ import sys
 import threading
 import types
 
-from adaptive_agents.team_skills.consumer import ConsumerSource
-import adaptive_agents.team_skills.mcp_server as mcp_module
+from finance_adaptive_agents.team_skills.consumer import ConsumerSource
+import finance_adaptive_agents.team_skills.mcp_server as mcp_module
 
 
 def test_mcp_runs_independent_context_starts_concurrently(monkeypatch) -> None:

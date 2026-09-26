@@ -3,8 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 import subprocess
 
-import adaptive_agents.team_skills.evidence as evidence_module
-from adaptive_agents.team_skills.evidence import collect_skill_bootstrap_evidence
+import finance_adaptive_agents.team_skills.evidence as evidence_module
+from finance_adaptive_agents.team_skills.evidence import collect_skill_bootstrap_evidence
 
 
 def test_repository_evidence_prunes_excluded_trees_and_bounds_deterministically(

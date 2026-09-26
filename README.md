@@ -21,7 +21,7 @@ You do not need to clone this repository to consume team skills. A new user need
 Install the CLI once:
 
 ```sh
-pipx install "git+https://github.com/franciscoabadesantos/adaptive-agents.git@main"
+pipx install "git+https://github.com/franciscoabadesantos/finance-adaptive-agents.git@main"
 ```
 
 Then enter any Git repository where you want to work and use the normal entry point:
@@ -108,7 +108,7 @@ There are two independent update paths:
 
 ```sh
 # Update this CLI application and its behavior.
-pipx upgrade adaptive-agents
+pipx upgrade finance-adaptive-agents
 
 # Fetch canonical Skill changes and refresh the current repository.
 team-skills prepare
@@ -139,7 +139,7 @@ The root descriptor identifies the source and its team:
 ```json
 {
   "schema_version": 2,
-  "source_id": "adaptive-agents",
+  "source_id": "finance-adaptive-agents",
   "organization": "",
   "team": "engineering"
 }
@@ -186,7 +186,7 @@ clarification can add, correct, or replace intent without rescanning the reposit
 conversation is discarded on exit and is never written to the repository, lock, configuration,
 or the persistent local canonical replica.
 
-By default, the tool fetches the `main` branch of `adaptive-agents` and reads only its
+By default, the tool fetches the `main` branch of `finance-adaptive-agents` and reads only its
 `team-skills/` catalog. Product code and team skills share Git hosting for this trial,
 but remain separate logical assets with independent source paths, revisions, and lifecycle.
 

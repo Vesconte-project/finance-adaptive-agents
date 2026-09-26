@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Callable
 
-from adaptive_agents.team_skills.repository import TeamSkillsError
+from finance_adaptive_agents.team_skills.repository import TeamSkillsError
 
 
 SKILL_NAME = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")

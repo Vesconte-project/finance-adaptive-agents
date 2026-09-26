@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Protocol
 
-from adaptive_agents.team_skills.repository import TeamSkillsError
+from finance_adaptive_agents.team_skills.repository import TeamSkillsError
 
 from .evidence import RepositorySkillsEvidence
 

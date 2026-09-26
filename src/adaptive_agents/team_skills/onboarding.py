@@ -28,7 +28,7 @@ _KNOWN_MANAGED_DIGESTS = {
 
 
 def onboarding_skill_text() -> str:
-    return files("adaptive_agents.team_skills").joinpath(
+    return files("finance_adaptive_agents.team_skills").joinpath(
         "skill_template", ONBOARDING_SKILL_NAME, "SKILL.md"
     ).read_text(encoding="utf-8")
 

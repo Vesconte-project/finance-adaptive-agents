@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from adaptive_agents.team_skills.evaluation import (
+from finance_adaptive_agents.team_skills.evaluation import (
     evaluate_routing,
     routing_evaluation_cases,
     synthetic_routing_catalog,
 )
-from adaptive_agents.team_skills.selector import SkillSelection, SkillSelectionEntry
+from finance_adaptive_agents.team_skills.selector import SkillSelection, SkillSelectionEntry
 
 
 class ExpectedSelectionStub:

@@ -10,9 +10,9 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Callable
 
-import adaptive_agents.admission_control as native
+import finance_adaptive_agents.admission_control as native
 
-from adaptive_agents.team_skills.repository import (
+from finance_adaptive_agents.team_skills.repository import (
     TeamSkillsError,
     find_repository,
     repository_identity,

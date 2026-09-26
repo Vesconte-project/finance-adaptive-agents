@@ -6,7 +6,7 @@ import hashlib
 import inspect
 from pathlib import Path
 
-import adaptive_agents.admission_control as native
+import finance_adaptive_agents.admission_control as native
 
 
 VALIDATED_COMMIT = "b610f1b1232eeb2840e5cca2ddaf450ba64fa491"
@@ -53,7 +53,7 @@ def test_native_decision_callable_origins():
             f"{native.AdmissionSnapshot.record_exposure.__qualname__}"
         ),
     } == {
-        "admit": "adaptive_agents.admission_control.admission.admit",
-        "validate": "adaptive_agents.admission_control.admission.validate",
-        "record_exposure": "adaptive_agents.admission_control.models.AdmissionSnapshot.record_exposure",
+        "admit": "finance_adaptive_agents.admission_control.admission.admit",
+        "validate": "finance_adaptive_agents.admission_control.admission.validate",
+        "record_exposure": "finance_adaptive_agents.admission_control.models.AdmissionSnapshot.record_exposure",
     }

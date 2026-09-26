@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "collection": "adaptive-agents-research-2026-09-01",
+  "collection": "finance-adaptive-agents-research-2026-09-01",
   "policy": {
     "durable_primary": "private off-repository storage",
     "durable_secondary": "independent private backup",
@@ -15,7 +15,7 @@
   "canonical_archives": [
     {
       "id": "knowledge-resolution-development-v1",
-      "filename": "adaptive-agents__knowledge-resolution-development-v1__restricted__2026-09-01.tar.gz",
+      "filename": "finance-adaptive-agents__knowledge-resolution-development-v1__restricted__2026-09-01.tar.gz",
       "bytes": 103662,
       "sha256": "e8bb3f5abe8234b6fd1fd5cd7a5d9ba4c96f717629a4b763186e5f1fa9ccdd1c",
       "sensitivity": "restricted",
@@ -24,7 +24,7 @@
     },
     {
       "id": "knowledge-resolution-blind-holdout-v1",
-      "filename": "adaptive-agents__knowledge-resolution-blind-holdout-v1__restricted__2026-09-01.tar.gz",
+      "filename": "finance-adaptive-agents__knowledge-resolution-blind-holdout-v1__restricted__2026-09-01.tar.gz",
       "bytes": 635786,
       "sha256": "326a7826fcca09fac9ee9b41f70afbb72eed8c457aac4b444319db9e3afdf5f5",
       "sensitivity": "restricted",
@@ -32,7 +32,7 @@
     },
     {
       "id": "admission-control-first-blind-evaluation-v1",
-      "filename": "adaptive-agents__admission-control-first-blind-evaluation-v1__restricted__2026-09-01.tar.gz",
+      "filename": "finance-adaptive-agents__admission-control-first-blind-evaluation-v1__restricted__2026-09-01.tar.gz",
       "bytes": 1748609,
       "sha256": "35ee74a9d2219b5142d360f912c3f65369609bea3f89dcfc1a5d3c08945734e1",
       "sensitivity": "restricted",
@@ -42,7 +42,7 @@
     },
     {
       "id": "native-admission-control-public-evaluation-v2",
-      "filename": "adaptive-agents__native-admission-control-public-evaluation-v2__restricted__2026-09-01.tar.gz",
+      "filename": "finance-adaptive-agents__native-admission-control-public-evaluation-v2__restricted__2026-09-01.tar.gz",
       "bytes": 6534446,
       "sha256": "dc63b746cc9ddc77cfbe2d4a56ffd461f429135ab5a3e30066d7af7bc7a9c141",
       "sensitivity": "restricted",
@@ -52,7 +52,7 @@
     },
     {
       "id": "public-benchmark-packs-v1",
-      "filename": "adaptive-agents__public-benchmark-packs-v1__public__2026-09-01.tar.gz",
+      "filename": "finance-adaptive-agents__public-benchmark-packs-v1__public__2026-09-01.tar.gz",
       "bytes": 71028,
       "sha256": "e0d13cc498620a83a156e3831dc95d9e272096a798d13c347ca2b4ff6acd6b64",
       "sensitivity": "public",

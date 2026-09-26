@@ -73,7 +73,7 @@ not the presence of `.git`, chooses between `context` and `prepare`; ambiguous r
 temporary context.
 
 Application upgrades and catalog refreshes are deliberately different. Use
-`pipx upgrade adaptive-agents` to update the CLI application. Use
+`pipx upgrade finance-adaptive-agents` to update the CLI application. Use
 `team-skills prepare` to fetch canonical knowledge and update the current consumer repository.
 
 ## Default source and source contract
@@ -84,7 +84,7 @@ The normal team-trial command is:
 team-skills prepare
 ```
 
-For an unprepared repository, it uses the `adaptive-agents` Git repository at ref `main`,
+For an unprepared repository, it uses the `finance-adaptive-agents` Git repository at ref `main`,
 with catalog path `team-skills`. Product code and team skills share a repository for the
 trial but remain separate logical assets: the effective knowledge revision is the latest commit
 that changed the catalog subtree, not necessarily the product repository's HEAD.
@@ -232,7 +232,7 @@ starting with an advanced command cannot silently fall back to an unchosen provi
 `show` remain available without setup because they perform no model selection.
 
 Install the CLI itself once from the approved Git distribution using
-`pipx install "git+https://github.com/Vesconte-project/adaptive-agents.git@main"`, then
+`pipx install "git+https://github.com/Vesconte-project/finance-adaptive-agents.git@main"`, then
 run `team-skills prepare`. The installed Skill turns a natural-language request into task-scoped
 preparation, asks only material clarification questions, and always previews before application. A
 Codex plugin may package this conversational entry point as an optional user interface, but the CLI

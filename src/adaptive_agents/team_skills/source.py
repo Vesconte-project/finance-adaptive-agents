@@ -13,10 +13,10 @@ from contextlib import contextmanager
 from pathlib import Path, PurePosixPath
 from typing import Iterator
 
-from adaptive_agents.team_skills.cache_lock import cache_lock
-from adaptive_agents.team_skills.consumer import _atomic_text, validate_catalog_path
-from adaptive_agents.team_skills.repository import TeamSkillsError
-from adaptive_agents.team_skills.storage import (
+from finance_adaptive_agents.team_skills.cache_lock import cache_lock
+from finance_adaptive_agents.team_skills.consumer import _atomic_text, validate_catalog_path
+from finance_adaptive_agents.team_skills.repository import TeamSkillsError
+from finance_adaptive_agents.team_skills.storage import (
     clone_source,
     registered_source_checkout,
     source_cache_directory,

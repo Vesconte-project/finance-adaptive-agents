@@ -32,7 +32,7 @@ Additional real Skills are useful, but no arbitrary item count is required. Befo
 - confirm participants can install the tool;
 - confirm each participant's chosen selector is installed and authenticated;
 - verify their Git environment can access the private canonical source, currently the
-  `adaptive-agents` repository over HTTPS; and
+  `finance-adaptive-agents` repository over HTTPS; and
 - when testing Claude consumption, verify the local filesystem supports the required relative
   directory-symlink bridge.
 

@@ -14,13 +14,13 @@ from pathlib import Path
 
 import pytest
 
-import adaptive_agents.team_skills.distribution as distribution
-import adaptive_agents.team_skills.cli as shared_cli
-import adaptive_agents.team_skills.context as context_module
-from adaptive_agents.team_skills.skill_quality import SkillAssessment, assessment_prompt
-from adaptive_agents.team_skills.skill_validation import load_candidate, local_canonical_skills
-from adaptive_agents.team_skills.proposals import PreparedProposal, prepare_addition, prepare_update
-from adaptive_agents.team_skills import (
+import finance_adaptive_agents.team_skills.distribution as distribution
+import finance_adaptive_agents.team_skills.cli as shared_cli
+import finance_adaptive_agents.team_skills.context as context_module
+from finance_adaptive_agents.team_skills.skill_quality import SkillAssessment, assessment_prompt
+from finance_adaptive_agents.team_skills.skill_validation import load_candidate, local_canonical_skills
+from finance_adaptive_agents.team_skills.proposals import PreparedProposal, prepare_addition, prepare_update
+from finance_adaptive_agents.team_skills import (
     ClaudeSkillSelector,
     CodexSkillSelector,
     CopilotSkillSelector,
@@ -40,7 +40,7 @@ from adaptive_agents.team_skills import (
     preferences_path,
     save_selector_preference,
 )
-from adaptive_agents.team_skills.consumer import (
+from finance_adaptive_agents.team_skills.consumer import (
     DEFAULT_CATALOG_PATH,
     DEFAULT_SOURCE_REF,
     DEFAULT_SOURCE_URL,
@@ -48,22 +48,22 @@ from adaptive_agents.team_skills.consumer import (
     load_consumer_config,
     load_consumer_lock,
 )
-from adaptive_agents.team_skills.evidence import RepositorySkillsEvidence
-from adaptive_agents.team_skills.selector import (
+from finance_adaptive_agents.team_skills.evidence import RepositorySkillsEvidence
+from finance_adaptive_agents.team_skills.selector import (
     SkillRoutingEntry,
     build_selection_prompt,
     build_selection_request,
     parse_selection,
     resolve_selector_name,
 )
-from adaptive_agents.team_skills.storage import (
+from finance_adaptive_agents.team_skills.storage import (
     register_source_checkout,
     source_cache_directory,
     source_replica_directory,
     user_cache_root,
     user_data_root,
 )
-from adaptive_agents.team_skills.source import GitKnowledgeSource, SourceUnavailable
+from finance_adaptive_agents.team_skills.source import GitKnowledgeSource, SourceUnavailable
 
 
 @pytest.fixture(autouse=True)
@@ -382,8 +382,8 @@ def test_context_cli_emits_agent_json_outside_git(tmp_path: Path, capsys):
 
 def test_mcp_exposes_progressive_transient_tools(tmp_path: Path, monkeypatch):
     mcp_package = pytest.importorskip("mcp")
-    import adaptive_agents.team_skills.mcp_server as mcp_module
-    from adaptive_agents.team_skills.mcp_server import create_mcp_server
+    import finance_adaptive_agents.team_skills.mcp_server as mcp_module
+    from finance_adaptive_agents.team_skills.mcp_server import create_mcp_server
 
     offloaded: list[str] = []
     original_to_thread = mcp_module.asyncio.to_thread
@@ -560,7 +560,7 @@ def test_unwritable_machine_data_falls_back_to_temporary_storage(monkeypatch, tm
             raise PermissionError("read-only test cache")
         return original_mkstemp(*args, **kwargs)
 
-    monkeypatch.setattr("adaptive_agents.team_skills.source.tempfile.mkstemp", controlled_mkstemp)
+    monkeypatch.setattr("finance_adaptive_agents.team_skills.source.tempfile.mkstemp", controlled_mkstemp)
     source = GitKnowledgeSource(repository)
     commit = source.acquire("../canonical", "main")
 
@@ -848,7 +848,7 @@ def test_default_bootstrap_without_source_uses_bundled_catalog(monkeypatch, tmp_
     assert len(selector.calls) == 1
     assert native_calls == {"admit": 1, "receipt": 1, "validate": 1}
     assert (DEFAULT_SOURCE_URL, DEFAULT_SOURCE_REF, DEFAULT_CATALOG_PATH) == (
-        "https://github.com/Vesconte-project/adaptive_agents.git",
+        "https://github.com/Vesconte-project/finance_adaptive_agents.git",
         "main",
         "team-skills",
     )
@@ -1423,7 +1423,7 @@ def test_onboarding_refuses_an_unmanaged_distinct_skill(tmp_path: Path):
 def test_onboarding_readiness_reports_each_requested_agent(monkeypatch):
     commands = {"codex": "/bin/codex", "copilot": "/bin/copilot"}
     monkeypatch.setattr(
-        "adaptive_agents.team_skills.onboarding.shutil.which",
+        "finance_adaptive_agents.team_skills.onboarding.shutil.which",
         lambda command, path=None: commands.get(command),
     )
 
@@ -1439,7 +1439,7 @@ def test_setup_installs_onboarding_and_reports_missing_agent(monkeypatch, tmp_pa
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("CODEX_HOME", str(home / "codex"))
     monkeypatch.setattr(
-        "adaptive_agents.team_skills.onboarding.shutil.which",
+        "finance_adaptive_agents.team_skills.onboarding.shutil.which",
         lambda command, path=None: "/bin/codex" if command == "codex" else None,
     )
 
@@ -1460,7 +1460,7 @@ def test_setup_only_requires_and_limits_to_its_selector(monkeypatch, tmp_path: P
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("CODEX_HOME", str(home / "codex"))
     monkeypatch.setattr(
-        "adaptive_agents.team_skills.onboarding.shutil.which",
+        "finance_adaptive_agents.team_skills.onboarding.shutil.which",
         lambda command, path=None: "/bin/claude" if command == "claude" else None,
     )
 
@@ -1481,7 +1481,7 @@ def test_interactive_setup_asks_for_and_saves_the_default_selector(monkeypatch, 
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("CODEX_HOME", str(home / "codex"))
     monkeypatch.setattr(
-        "adaptive_agents.team_skills.onboarding.shutil.which",
+        "finance_adaptive_agents.team_skills.onboarding.shutil.which",
         lambda command, path=None: "/bin/claude" if command == "claude" else None,
     )
 
@@ -1506,7 +1506,7 @@ def test_validate_performs_first_run_setup_before_using_a_selector(monkeypatch, 
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("CODEX_HOME", str(home / "codex"))
     monkeypatch.setattr(
-        "adaptive_agents.team_skills.onboarding.shutil.which",
+        "finance_adaptive_agents.team_skills.onboarding.shutil.which",
         lambda command, path=None: "/bin/claude" if command == "claude" else None,
     )
 
@@ -1539,7 +1539,7 @@ def test_prepare_runs_first_use_setup_then_bootstraps_and_later_syncs(monkeypatc
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("CODEX_HOME", str(home / "codex"))
     monkeypatch.setattr(
-        "adaptive_agents.team_skills.onboarding.shutil.which",
+        "finance_adaptive_agents.team_skills.onboarding.shutil.which",
         lambda command, path=None: f"/bin/{command}" if command in {"codex", "claude"} else None,
     )
 
@@ -2615,7 +2615,7 @@ def test_fresh_checkout_hydrates_generated_skill_from_committed_config_and_lock(
         [
             sys.executable,
             "-m",
-            "adaptive_agents.team_skills",
+            "finance_adaptive_agents.team_skills",
             "sync",
             "--yes",
             "--repo",
@@ -2729,7 +2729,7 @@ def test_bootstrap_cli_runs_complete_plan_with_codex_selector_contract(tmp_path:
         [
             sys.executable,
             "-m",
-            "adaptive_agents.team_skills",
+            "finance_adaptive_agents.team_skills",
             "bootstrap",
             "--source",
             "../canonical",

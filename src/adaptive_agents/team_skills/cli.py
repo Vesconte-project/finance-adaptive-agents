@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 from textwrap import wrap
 
-from adaptive_agents import __version__
+from finance_adaptive_agents import __version__
 
 from .repository import TeamSkillsError, find_repository
 from .canonical import CanonicalSkill
