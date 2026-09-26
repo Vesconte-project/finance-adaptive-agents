@@ -39,15 +39,26 @@ def test_canonical_skill_catalog_is_safe_and_portable():
     )
 
     assert [(skill.id, skill.name, skill.state) for skill in catalog.skills] == [
+        ("agent-operating-agreement", "agent-operating-agreement", "active"),
         ("canonical-team-skill-authoring", "canonical-team-skill-authoring", "active"),
         ("cloudflare-r2-backups-and-bucket-lock", "cloudflare-r2-backups-and-bucket-lock", "active"),
+        ("deploy-outcome-visibility", "deploy-outcome-visibility", "active"),
+        ("diagnose-host-failures", "diagnose-host-failures", "active"),
         ("dify-workflow-operations", "dify-workflow-operations", "active"),
+        ("effective-config-tracing", "effective-config-tracing", "active"),
         ("finance-production-release-channel", "finance-production-release-channel", "active"),
+        ("greenfield-host-setup", "greenfield-host-setup", "active"),
+        ("guards-that-pass-blindly", "guards-that-pass-blindly", "active"),
         ("healthchecks-io-job-alerting", "healthchecks-io-job-alerting", "active"),
+        ("host-mutation-batches", "host-mutation-batches", "active"),
+        ("immutable-deploys-single-host", "immutable-deploys-single-host", "active"),
         ("jira-data-center-operations", "jira-data-center-operations", "active"),
         ("lets-encrypt-dns01-octodns-renewal", "lets-encrypt-dns01-octodns-renewal", "active"),
         ("openssh-socket-activation-listeners", "openssh-socket-activation-listeners", "active"),
+        ("orchestrator-runtime-ops", "orchestrator-runtime-ops", "active"),
         ("prefect-self-hosted-operations", "prefect-self-hosted-operations", "active"),
+        ("privilege-boundaries-ci-runner", "privilege-boundaries-ci-runner", "active"),
+        ("stateful-service-migrations", "stateful-service-migrations", "active"),
         (
             "systemd-root-units-and-sandbox-pitfalls",
             "systemd-root-units-and-sandbox-pitfalls",
@@ -58,6 +69,7 @@ def test_canonical_skill_catalog_is_safe_and_portable():
             "systemd-service-exit-and-oom-semantics",
             "active",
         ),
+        ("verify-against-the-host", "verify-against-the-host", "active"),
     ]
     skills = {skill.name: skill for skill in catalog.skills}
     assert catalog.descriptor.organization == "Vesconte-project"
