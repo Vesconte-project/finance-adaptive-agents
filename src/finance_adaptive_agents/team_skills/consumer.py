@@ -22,7 +22,7 @@ EXCLUDE_END = "# END team-skills managed Skills"
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _GIT_REVISION = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
 _SKILL_NAME = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
-DEFAULT_SOURCE_URL = "https://github.com/Vesconte-project/finance_adaptive_agents.git"
+DEFAULT_SOURCE_URL = "https://github.com/Vesconte-project/finance-adaptive-agents.git"
 DEFAULT_SOURCE_REF = "main"
 DEFAULT_CATALOG_PATH = "team-skills"
 
