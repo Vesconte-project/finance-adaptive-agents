@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "id": "systemd-service-exit-and-oom-semantics",
+  "state": "active"
+}

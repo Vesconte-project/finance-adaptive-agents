@@ -102,8 +102,12 @@ The canonical repository has a root `team-skills.json` with `schema_version`, `s
 `organization_default_skill_ids`: active Skill IDs sent to the selected model and added as
 auditable organization-default recommendations before native validation during a normal bootstrap
 of a repository whose Git remote owner exactly matches `organization`. They are not injected for
-other owners or for explicit task-scoped bootstrap. An empty `organization` means the source is
-not bound to an owner and cannot declare organization defaults. Each
+other owners or for explicit task-scoped bootstrap. Schema version 2 may also declare
+`organization_only_skill_ids`; those active packages receive native organization scope, are not
+exposed to selectors for repositories with another or unknown remote owner, and are removed by sync
+from previously prepared out-of-organization repositories (subject to local-change protection).
+An empty `organization` means the source is not bound to an owner and cannot declare either
+organization defaults or organization-only Skills. Each
 `skills/<directory>/team-skills.json` has exactly `schema_version`, a stable `id`, and
 `state` (`active` or `revoked`). Semantic routing comes only from the standard Agent Skill
 `name` and `description` in `SKILL.md`.

@@ -1289,6 +1289,53 @@ def test_organization_defaults_are_recommended_only_for_matching_repository_owne
     assert [skill.id for skill in explicit_plan.desired_skills] == ["dns"]
 
 
+def test_organization_only_skill_is_not_exposed_outside_owner_and_sync_removes_old_copy(tmp_path: Path):
+    source = _canonical(tmp_path)
+    external_repo = _unrelated_repo(tmp_path, "external-private-skill")
+    _git(external_repo, "remote", "add", "origin", "https://github.com/another/service.git")
+    service = TeamSkillsDistributionService(SelectAllStub())
+    initial_plan = service.bootstrap_plan(external_repo, source_url="../canonical")
+    service.apply(initial_plan)
+    assert [skill.id for skill in initial_plan.desired_skills] == ["dns"]
+
+    descriptor = json.loads((source / "team-skills.json").read_text(encoding="utf-8"))
+    descriptor.update(
+        {
+            "schema_version": 2,
+            "organization": "Vesconte-project",
+            "organization_default_skill_ids": ["dns"],
+            "organization_only_skill_ids": ["dns"],
+        }
+    )
+    (source / "team-skills.json").write_text(
+        json.dumps(descriptor, indent=2) + "\n", encoding="utf-8"
+    )
+    _git(source, "add", "team-skills.json")
+    _git(source, "-c", "commit.gpgsign=false", "commit", "-q", "-m", "Restrict DNS Skill")
+
+    sync_plan = service.sync_plan(external_repo)
+    assert sync_plan.desired_skills == ()
+    assert [(action.id, action.action) for action in sync_plan.actions] == [("dns", "remove")]
+    service.apply(sync_plan)
+    assert not (external_repo / ".agents/skills/dns").exists()
+
+    owner_repo = _unrelated_repo(tmp_path, "owner-private-skill")
+    _git(owner_repo, "remote", "add", "origin", "https://github.com/Vesconte-project/service.git")
+    owner_plan = TeamSkillsDistributionService(OrganizationDefaultStub()).bootstrap_plan(
+        owner_repo, source_url="../canonical"
+    )
+    assert [skill.id for skill in owner_plan.desired_skills] == ["dns"]
+
+    fresh_external = _unrelated_repo(tmp_path, "fresh-external-private-skill")
+    _git(fresh_external, "remote", "add", "origin", "https://github.com/another/other.git")
+    selector = EvidenceRoutingStub()
+    external_plan = TeamSkillsDistributionService(selector).bootstrap_plan(
+        fresh_external, source_url="../canonical"
+    )
+    assert selector.calls[0][1] == ()
+    assert external_plan.desired_skills == ()
+
+
 def test_unbound_canonical_source_rejects_organization_defaults(tmp_path: Path):
     source = _canonical(tmp_path)
     descriptor = json.loads((source / "team-skills.json").read_text(encoding="utf-8"))
@@ -1639,7 +1686,7 @@ def test_validate_skill_uses_only_the_installed_copy_and_its_locked_predecessor(
     monkeypatch.setattr(shared_cli, "consumer_validation_targets", lambda _root: ((
         type("Baseline", (), {"id": "jira-data-center-operations", "name": baseline.name,
             "description": baseline.description, "files": baseline.files, "digest_sha256": baseline.digest_sha256,
-            "source_path": "skills/jira-data-center-operations"})(), candidate),))
+            "source_path": "skills/jira-data-center-operations", "organization_scope": None})(), candidate),))
     monkeypatch.setattr(shared_cli, "assess_candidate", assess)
     assert shared_cli.main(["validate", "jira-data-center-operations", "--repo", str(repository)]) == 0
     output = capsys.readouterr().out
@@ -2288,10 +2335,11 @@ def test_bootstrap_uses_native_admit_receipt_and_validate(monkeypatch, tmp_path:
     record = captured["catalog"].resources[0]
     assert record.content.kind == distribution.native.ResourceKind.AGENT_SKILL
     assert record.admission.scope == distribution.native.Scope(
-        organization="company", team="engineering"
+        organization=None, team="engineering"
     )
     assert record.admission.exposure_policy == distribution.native.ExposurePolicy.REQUIRE_ADMISSIBLE
     assert captured["context"].repository == "consumer"
+    assert captured["context"].organization == "unowned:consumer"
 
 
 def test_revoked_model_selected_skill_is_native_rejected(tmp_path: Path):

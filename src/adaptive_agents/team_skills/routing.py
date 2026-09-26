@@ -15,6 +15,7 @@ from .selector import (
     SkillSelection,
     SkillSelector,
 )
+from .repository import repository_organization
 from .source import GitKnowledgeSource
 
 
@@ -40,7 +41,7 @@ def native_catalog(catalog: CanonicalCatalog) -> native.ResourceCatalog:
                         else native.LifecycleState.REVOKED
                     ),
                     scope=native.Scope(
-                        organization=catalog.descriptor.organization,
+                        organization=skill.organization_scope,
                         team=catalog.descriptor.team,
                     ),
                     compatibility=(),
@@ -59,7 +60,7 @@ def admission_context(
     now: datetime | None = None,
 ) -> native.AdmissionContext:
     return native.AdmissionContext(
-        organization=catalog.descriptor.organization,
+        organization=repository_organization(repository_id) or f"unowned:{repository_id}",
         team=catalog.descriptor.team,
         repository=repository_id,
         affected_paths=(),
