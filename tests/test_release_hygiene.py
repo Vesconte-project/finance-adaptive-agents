@@ -41,6 +41,7 @@ def test_canonical_skill_catalog_is_safe_and_portable():
     assert [(skill.id, skill.name, skill.state) for skill in catalog.skills] == [
         ("agent-operating-agreement", "agent-operating-agreement", "active"),
         ("canonical-team-skill-authoring", "canonical-team-skill-authoring", "active"),
+        ("clerk-vercel-auth-environments", "clerk-vercel-auth-environments", "active"),
         ("cloudflare-r2-backups-and-bucket-lock", "cloudflare-r2-backups-and-bucket-lock", "active"),
         ("deploy-outcome-visibility", "deploy-outcome-visibility", "active"),
         ("diagnose-host-failures", "diagnose-host-failures", "active"),
@@ -54,6 +55,7 @@ def test_canonical_skill_catalog_is_safe_and_portable():
         ("immutable-deploys-single-host", "immutable-deploys-single-host", "active"),
         ("jira-data-center-operations", "jira-data-center-operations", "active"),
         ("lets-encrypt-dns01-octodns-renewal", "lets-encrypt-dns01-octodns-renewal", "active"),
+        ("mcp-api-capability-triage", "mcp-api-capability-triage", "active"),
         ("openssh-socket-activation-listeners", "openssh-socket-activation-listeners", "active"),
         ("orchestrator-runtime-ops", "orchestrator-runtime-ops", "active"),
         ("prefect-self-hosted-operations", "prefect-self-hosted-operations", "active"),
