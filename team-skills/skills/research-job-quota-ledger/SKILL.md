@@ -10,8 +10,8 @@ description: Use when designing or debugging long-running paid research jobs, qu
 ## Atomic admission
 
 1. Authenticate the Clerk principal in FastAPI; resolve the authoritative internal `account_id`, current membership/permission and entitled feature.
-2. In **one PostgreSQL transaction**, check the applicable billing period and remaining included units, storage headroom, policy-based concurrency and an account-scoped idempotency key. Reserve one comparison unit and an estimated storage ceiling; persist job and durable outbox record atomically.
-3. Publish by outbox worker to a durable broker; consumer receives only a job reference, not Clerk session tokens or arbitrary declared user authority. Define idempotent job claims/leases so retries and duplicate messages cannot create duplicate external effects or charge twice.
+2. In **one PostgreSQL transaction**, check the applicable billing period and remaining included units, storage headroom, policy-based concurrency and an account-scoped idempotency key. Reserve one comparison unit and an estimated storage ceiling; persist the eligible job atomically. Persist outbox records in that transaction **when distinct business events or a broker publisher actually require them**; research discovery via PostgreSQL pull does not require a duplicate broker message.
+3. The dispatch transport is replaceable: PostgreSQL + HTTPS pull may acquire an authorized lease directly; a broker consumer may receive a job reference and then claim it at FastAPI. Neither path transports Clerk session tokens or grants authorization by possession of the reference. Preserve idempotent leases, generation fencing and settlement across duplicate deliveries. For acquisition/transport migration, use the separate `research-dispatch-transport-boundary` Skill.
 4. Workers acquire execution capacity on demand and record both model outcomes. Persist validated results before marking successful and settling a unit. Reconcile abandoned reservations and completed-but-unsettled jobs.
 
 ## Settlement state machine
@@ -37,14 +37,15 @@ For **local degraded-billing exercises**, the agreed fixture is: verified failur
 - Same idempotency key retried, worker redelivery, crash after model 1, crash after both results, repeated cancellation, split-brain worker lease, monthly period boundary.
 - Account has 4.8 GB stored with 250 MB reservation under 5 GB cap -> new job denied.
 - Artifacts exceed a reserved ceiling -> fail and release unit, clean partial objects; prove no storage race between simultaneous jobs.
-- Worker stopped/restarted; outbox not published; per-account degradation; subscription revoked after job acceptance.
+- Worker stopped/restarted; a committed job is not dispatched after a lost wakeup; broker outbox not published when a broker is configured; per-account degradation; subscription revoked after job acceptance.
 
 Stop before performing paid external model calls, touching a real queue, or cancelling live jobs without explicit authorization.
 
 ## Sources to re-check
 
 - https://www.postgresql.org/docs/current/explicit-locking.html
-- https://docs.celeryq.dev/en/stable/userguide/tasks.html
+- https://www.postgresql.org/docs/16/sql-select.html
+- https://docs.celeryq.dev/en/v5.6.3/userguide/configuration.html
 - https://docs.stripe.com/billing/subscriptions/usage-based/recording-usage-api
 
-Operational choices require tests against the actual broker, database isolation level and worker version.
+Operational choices require tests against the actual transport (including broker if configured), database isolation level, worker version and two real models.
