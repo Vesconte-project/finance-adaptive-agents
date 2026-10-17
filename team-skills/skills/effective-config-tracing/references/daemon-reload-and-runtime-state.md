@@ -1,44 +1,54 @@
-# Ficheiro instalado, daemon com o valor antigo
+# Instalado, carregado e verificado são estados diferentes
 
-Um ficheiro de configuração correto em disco não prova que o processo o leu.
-Um daemon pode precisar de reload ou restart, e a capacidade de reload depende
-da versão.
+**Decisão:** nunca declares aplicada uma configuração que só está instalada.
+Confirma a capacidade da unit antes de escolher como carregar a alteração;
+segue a estratégia aprovada pelo operador: reload, restart ou reboot pendente.
+A ausência de reload não proíbe uma instalação deliberadamente pendente.
 
 ## Caso: política de energia num servidor em hardware de portátil
 
-Um servidor montado num portátil continuava a tentar suspender (dezenas de
-tentativas em minutos), embora o drop-in do `systemd-logind` dissesse
-`ignore` para tampa, inatividade e teclas de energia. O `cat-config` mostrava
-os valores certos; o daemon ainda não os tinha carregado.
+**Evidência:** caso único num host, 16/10/2026, systemd 259.5. Um drop-in
+configurou a tampa e a inatividade para serem ignoradas. O reload foi aceite
+sem reiniciar o logind; num intervalo de dez minutos, as tentativas de suspensão
+passaram de dezenas para zero. Isto não estabelece uma versão mínima para
+reload nem prova que todas as propriedades sejam expostas em todas as versões.
 
-- O `systemd-logind` só suporta reload a partir de versões que o declaram
-  com `Type=notify-reload` (systemd 253 ou mais recente; confirma na versão
-  instalada). Em versões anteriores, um reload não aplica a configuração e um
-  restart pode terminar sessões.
-- Verifica a capacidade **antes** de instalar a política: lê o `Type` da unit
-  e recusa, sem instalar nada, se não for o esperado. Uma instalação parcial é
-  pior do que nenhuma.
-- Confirma o valor **ativo** pela interface do próprio daemon, não pelos
-  ficheiros. Para o logind, por D-Bus:
+Se o serviço for gerido por systemd, consulta a capacidade da unit instalada
+(por exemplo, `CanReload` e `Type`) e confirma o mecanismo suportado nessa
+versão. Não tentes um restart como substituição automática: pode afetar sessões.
+Se a decisão aprovada for esperar pelo reboot, regista “instalado, carregamento
+pendente” e a verificação que faltará depois dele.
 
-  ```bash
-  busctl get-property org.freedesktop.login1 /org/freedesktop/login1 \
-    org.freedesktop.login1.Manager HandleLidSwitch
-  ```
+Confirma valores ativos pela interface do daemon quando disponível. Exemplo
+com âmbito **observado no systemd 259 neste host**, não como interface universal:
 
-  Repete para cada propriedade da política e exige o valor esperado em
-  todas.
-- Mede o sintoma antes e depois (por exemplo, tentativas de suspensão no
-  journal num intervalo fixo). Zero depois do reload é a prova; um ficheiro
-  correto não é.
-- Num servidor de hardware de portátil, mascarar os targets de suspensão e
-  hibernação é uma segunda camada contra caminhos que não passam pelo logind.
-  Confirma que nada no host depende deles.
+```bash
+busctl get-property org.freedesktop.login1 /org/freedesktop/login1 \
+  org.freedesktop.login1.Manager HandleLidSwitch
+```
 
-## Generalização
+Confirma a exposição de cada propriedade na versão alvo antes de a consultar.
+Não uses o sucesso desta consulta como prova de que o resto da política também
+foi carregado. `cat-config` mostra os ficheiros e a sua composição, não o estado
+do processo. Mede também o sintoma antes/depois num intervalo comparável;
+ausência de eventos só é conclusiva se a condição que os provocava continuar.
 
-Para qualquer daemon: confirma como aplica configuração nova (reload, restart,
-SIGHUP, nada), verifica que a versão instalada suporta esse caminho e lê o
-valor efetivo pela interface de runtime. Automação idempotente que só compara
-ficheiros vai declarar sucesso numa repetição em que a configuração nunca foi
-aplicada.
+Num host onde a política aprovada impede suspensão, máscaras dos targets podem
+ser uma segunda camada; não as cries ou retires sem confirmar dependências e
+autorização. A sua presença não prova que o logind deixou de tentar suspender.
+
+## Sinais de falha e limites
+
+Ficheiro certo com comportamento antigo, reload não suportado e sucesso
+declarado antes de um reboot pendente são sinais de verificação incompleta.
+Exige três provas distintas: conteúdo instalado, carregamento pelo mecanismo
+aprovado e efeito observado. Em caso de falha, conserva o estado pendente em
+vez de reiniciar sessões para fazer desaparecer o aviso.
+
+**Não aplicar:** erros de parsing ainda não resolvidos ou programas que leem
+deliberadamente a configuração a cada execução. Confirma o ciclo de vida real;
+não imponhas um reload a qualquer ferramenta que use um ficheiro.
+
+Para confirmar o âmbito desta versão, consulta a [unit upstream v259](https://github.com/systemd/systemd/blob/v259/units/systemd-logind.service.in)
+e as [propriedades D-Bus v259](https://github.com/systemd/systemd/blob/v259/src/login/logind-dbus.c).
+Isto não substitui a inspeção da unit e da interface realmente instaladas.

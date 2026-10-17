@@ -108,6 +108,11 @@ Se o lote for uma sequência de blocos que um operador cola numa janela
 aprovada, em vez de um script, lê
 [references/operator-window-blocks.md](references/operator-window-blocks.md).
 
+Se esses blocos pedirem interação ou parecerem parados, lê
+[references/operator-terminal-channels.md](references/operator-terminal-channels.md)
+antes de os repetir. Para uma retirada destrutiva falhada ou repartida por
+tentativas, lê [references/destructive-retirement-accounting.md](references/destructive-retirement-accounting.md).
+
 ## Dois lotes que tocam no mesmo ficheiro
 
 Uma armadilha possível não é evidente. Um lote declara o baseline do que espera

@@ -54,6 +54,7 @@ def test_canonical_skill_catalog_is_safe_and_portable():
             "active",
         ),
         ("codex-mcp-project-scope", "codex-mcp-project-scope", "active"),
+        ("credential-source-cutovers", "credential-source-cutovers", "active"),
         ("deploy-outcome-visibility", "deploy-outcome-visibility", "active"),
         ("diagnose-host-failures", "diagnose-host-failures", "active"),
         ("dify-workflow-operations", "dify-workflow-operations", "active"),

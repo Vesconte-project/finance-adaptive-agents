@@ -80,6 +80,10 @@ de escrita autorizado se esse requisito existir.
 
 ## Ativar
 
+Se a release inclui Git e a validação pode alterar metadados, lê
+[references/sealed-git-validation.md](references/sealed-git-validation.md)
+antes de declarar o selo verificado.
+
 Confirma primeiro o gestor de serviços, o alvo, as dependências, a janela e as
 permissões efetivas. Só executa a ativação quando o operador e o workflow
 autorizarem a operação. Se usar systemd, planeia e verifica apenas as units
