@@ -155,6 +155,8 @@ Assim a exceção descreve um facto histórico e não uma permissão futura.
 
 ## Sinais de alarme
 
+Para distinguir falha de execução de resultado lógico e decidir a consequência por operação, lê [references/guard-failure-semantics.md](references/guard-failure-semantics.md).
+
 - `except PermissionError: continue` em código de verificação.
 - Um `PASS` sem contagem de inputs.
 - Um guarda que nunca disse NÃO desde que foi instalado.
