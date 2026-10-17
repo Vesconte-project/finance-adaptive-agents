@@ -104,6 +104,10 @@ Para desenhar o script, usa o contrato em
 script efetivo pertence ao repositório de infraestrutura do host e precisa de
 testes contra os seus caminhos, identidades e serviços reais.
 
+Se o lote for uma sequência de blocos que um operador cola numa janela
+aprovada, em vez de um script, lê
+[references/operator-window-blocks.md](references/operator-window-blocks.md).
+
 ## Dois lotes que tocam no mesmo ficheiro
 
 Uma armadilha possível não é evidente. Um lote declara o baseline do que espera

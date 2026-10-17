@@ -1,6 +1,6 @@
 ---
 name: effective-config-tracing
-description: Rastrear uma divergência entre a configuração declarada e a configuração efetiva de um serviço, incluindo alterações ineficazes ou problemas de acesso após mudar a identidade. Usa quando há evidência dessa divergência; não para erros de parsing ou falhas sem discrepância de configuração.
+description: Rastrear uma divergência entre a configuração declarada e a configuração efetiva de um serviço, incluindo alterações ineficazes, um daemon que não carregou um ficheiro novo, ou problemas de acesso após mudar a identidade. Usa quando há evidência dessa divergência; não para erros de parsing ou falhas sem discrepância de configuração.
 ---
 
 # Onde é que este valor nasce, afinal
@@ -106,6 +106,13 @@ autorização como negação de acesso.
 - **A ordem dos `EnvironmentFile=` pode afetar o resultado.** Confirma a ordem
   aplicável na unit e nos drop-ins da versão instalada; documenta-a se for
   relevante, ou propõe remover duplicação após confirmar o consumidor.
+
+## Ficheiro certo, daemon com o valor antigo
+
+Se o ficheiro em disco está certo e o comportamento não mudou, o daemon pode
+não o ter carregado, ou a versão instalada pode não suportar reload. Lê
+[references/daemon-reload-and-runtime-state.md](references/daemon-reload-and-runtime-state.md),
+que inclui o caso da política de energia num servidor em hardware de portátil.
 
 ## Antes de remover uma variável de um ficheiro
 

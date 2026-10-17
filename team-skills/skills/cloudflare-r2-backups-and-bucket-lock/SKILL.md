@@ -1,6 +1,6 @@
 ---
 name: cloudflare-r2-backups-and-bucket-lock
-description: Use when an rclone upload to Cloudflare R2 fails with 403 AccessDenied, or when designing, testing, changing, or removing Cloudflare R2 Bucket Lock retention rules. Not for routine R2 uploads that already work, or for AWS S3 Object Lock.
+description: Use when an rclone upload to Cloudflare R2 fails with 403 AccessDenied, when restic through rclone serve fails on R2 with an index that "does not exist", or when designing, testing, changing, or removing Cloudflare R2 Bucket Lock retention rules. Not for routine R2 uploads that already work, or for AWS S3 Object Lock.
 ---
 
 # Cloudflare R2 backups and Bucket Lock
@@ -38,6 +38,12 @@ this, so **first confirm the wire call** (`-vv --dump headers`) instead of assum
   local file, and a companion checksum read back from R2 and compared. Exit status alone is not
   proof — check that the call is not inside a pipeline without `pipefail`, a conditional, or
   followed by `||`, and prove failure propagation with a stub that exits non-zero.
+
+## restic through rclone serve
+
+If restic reaches R2 through `rclone serve restic` and a `prune` fails because an index it has
+just written "does not exist", read
+[references/restic-via-rclone-serve.md](references/restic-via-rclone-serve.md).
 
 ## What R2 did not give us (observed; re-check)
 
