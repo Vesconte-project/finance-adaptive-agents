@@ -14,39 +14,42 @@ O catálogo completo está em `references/catalog.md` e contém 18 entradas.
 
 ## Índice por sintoma
 
+Cada seta aponta para uma hipótese a confirmar com a entrada detalhada; não
+atribui a causa só pelo sintoma.
+
 **Privilégios**
-- `sudo: The "no new privileges" flag is set` → `NoNewPrivileges` na unit mata o setuid.
+- `sudo: The "no new privileges" flag is set` → possível `NoNewPrivileges` a impedir a elevação por setuid.
 - Root recebe `Read-only file system` → uma proteção da unit ou do namespace é hipótese; confirma configuração e mount namespace ativos antes de determinar a causa.
 
 **systemd**
-- Serviços pararam sozinhos depois de reiniciar outro → `Requires=` propaga o stop, o start não os repõe.
-- Um PR endurece uma unit e na verdade remove hardening → o ficheiro do repo estava desatualizado.
+- Serviços ficaram parados após `stop` e depois `start` de outro → possível propagação de stop por dependência; distinguir de `restart` explícito.
+- Um PR endurece uma unit e na verdade remove hardening → possível divergência entre ficheiro revisto e configuração instalada.
 
 **Git usado por serviços no host**
-- `fatal: detected dubious ownership` → dono do repositório diferente de quem executa.
+- `fatal: detected dubious ownership` → possível divergência de proprietário e identidade executora.
 
 **Python e empacotamento**
-- `bad interpreter: No such file or directory` num CLI da release → shebang do diretório de staging.
-- Script root a correr de um diretório do utilizador → `sys.path[0]` permite substituir módulos.
+- `bad interpreter: No such file or directory` num CLI da release → possível shebang ainda ligado ao staging.
+- Script root a correr de um diretório do utilizador → possível substituição de módulos via diretório do script.
 
 **Workers e orquestração**
-- Ativação "verificada" em menos de um segundo → aceitou o heartbeat do processo anterior.
-- O symlink aponta para a versão nova e corre código antigo → as definições clonam um SHA antigo.
-- Todos os jobs falham no clone depois de mudar a identidade do serviço → faltam aliases SSH.
-- Runs presas em RUNNING há meses → o worker morreu sem transição de estado.
+- Ativação "verificada" em menos de um segundo → possível heartbeat da instância anterior.
+- O symlink aponta para a versão nova e corre código antigo → possível SHA antigo nos pull steps, se o backend os usar.
+- Todos os jobs falham no clone depois de mudar a identidade do serviço → possível falta de configuração/acesso SSH da identidade nova.
+- Runs presas em RUNNING há meses → possível perda do worker sem transição de estado.
 
 **Configuração em camadas**
-- Trabalhos falham num caminho que não está na configuração do host → o valor vem das definições do orquestrador.
-- Uma password aparece na API do orquestrador → referências a cofre resolvidas na publicação.
-- Um symlink correto e acesso negado → falta travessia num diretório acima.
+- Trabalhos falham num caminho que não está na configuração do host → possível override nas definições do backend.
+- Uma password aparece na API do orquestrador → possível referência a cofre resolvida para plaintext na publicação.
+- Um symlink correto e acesso negado → possível falta de travessia num ancestral.
 
 **Aplicações**
-- O serviço está vivo, a API responde, e o dashboard dá 404 → quer escrever dentro do pacote instalado.
+- O serviço está vivo, a API responde, e o dashboard dá 404 → possível tentativa de escrita no pacote instalado; confirmar logs.
 
 **Serviços e estado instalado**
 - `InvocationID` vazio logo após a unit correr → possível descarga do estado; confirmar lifecycle e referências.
-- `baseline drift` num lote cujo alvo já está instalado → dois lotes no mesmo ficheiro.
-- Deploy falha com `exit status 128` e o serviço não pode reiniciar → apagaram a deploy key do serviço.
+- `baseline drift` num lote cujo alvo já está instalado → possível sobreposição de instalações com baseline no mesmo ficheiro.
+- Deploy falha com `exit status 128` e o serviço não pode reiniciar → possível remoção de uma chave necessária ao clone de arranque.
 
 ## Como usar
 

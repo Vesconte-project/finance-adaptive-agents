@@ -1,6 +1,6 @@
 ---
 name: prefect-self-hosted-operations
-description: Use when deploying, operating, or diagnosing a self-hosted Prefect 3 server with process workers and git-based deployment pull steps — crashed or zero-duration runs, parent flows waiting on child deployments, deployment job variables, worker restarts, or releasing new code without interrupting scheduled runs.
+description: Use for pull-step startup failures, crashed or zero-duration runs, child-deployment outcome checks, job-variable diagnosis, or release/restart continuity in a self-hosted Prefect 3 setup with process workers and Git-based deployment pull steps. Not for general setup or routine flow authoring without one of these problems.
 ---
 
 # Self-hosted Prefect 3 operations
@@ -20,7 +20,7 @@ steps over SSH, 2026-08 → 09. Re-check version-sensitive API behaviour on othe
 ## Diagnose from the full run record, not the summary
 
 - A run can be `CRASHED` with `total_run_time=0` **after** real work happened: the worker
-  submitted it, ran the pull step, `git clone` failed (exit 128), Prefect retried the clone once,
+  submitted it, ran the pull step, `git clone` failed (exit 128), Prefect retried the clone once in the recorded setup,
   and the flow code never started. Zero run time is consistent with a flow that never began, but does not prove it: correlate
   state history, infrastructure/worker logs and flow-side evidence. It never proves nothing was attempted.
 - The short failure summary can hide the decisive detail. In one incident three identical
@@ -65,9 +65,11 @@ Reference checked 2026-10-19: [Prefect job variables](https://docs.prefect.io/v3
 
 ## Parent flows and child deployments
 
-- `run_deployment(..., timeout=None)` returns when the child reaches **any** final state. A parent
+- In the recorded setup, `run_deployment(..., timeout=None)` returns when the child reaches
+  **any** final state; the reference implementation checked on 2026-10-20 also polls for
+  `is_final()`. Confirm this for the installed client. A parent
   that does not check for `COMPLETED` will report success after a failed or crashed child.
-- Compute a run's logical date once, at flow start. Computing it at decision time lets a run that
+- For daily date-partitioned runs, compute the logical date once, at flow start. Computing it at decision time lets a run that
   starts before midnight UTC ask for a day that does not exist yet.
 - A trigger flag that controls whether a parent launches a child belongs in versioned deployment
   parameters, not in a manual API edit that the next publication silently reverts.
@@ -81,3 +83,5 @@ Flows that return early — missing provider configuration, missing model pointe
 finish `COMPLETED` with nothing written. Emit an explicit outcome (for example
 `skipped_configuration`, `blocked_precondition`, `no_work_expected`, `produced`, `partial`) and
 check destinations for freshness independently; a green run is not evidence of new data.
+
+Reference checked 2026-10-20: [run_deployment implementation](https://reference.prefect.io/prefect/deployments/flow_runs/).

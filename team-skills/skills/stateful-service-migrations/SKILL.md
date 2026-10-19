@@ -1,6 +1,6 @@
 ---
 name: stateful-service-migrations
-description: Planear a migração de estado ou artefactos identificados que residem num checkout ou volume implícito sujeito a substituição, limpeza ou recriação. Usa apenas quando esses dados estão confirmados nesse âmbito; consistência, ausência de perda e recuperação dependem de validação específica da aplicação.
+description: Planear e, com autorização explícita, executar a relocação de estado ou artefactos confirmados num checkout ou volume implícito sujeito a substituição, limpeza ou recriação, incluindo cutover e recuperação. Não para migrações de schema ou upgrades de bases de dados com persistência já declarada.
 ---
 
 # Migrar estado com recuperação verificada
@@ -18,8 +18,8 @@ si só, ausência de perda nem rollback consistente.
 Lista cada família de estado com: caminho atual, tamanho, quem escreve, quem
 lê, e a variável de configuração que passará a defini-lo. Inclui o que ninguém
 menciona: caches, cursores de sincronização, bases locais de ferramentas,
-  homes de serviços e volumes de contentores sem nome apenas quando estejam
-  dentro do âmbito confirmado e possam ser afetados.
+homes de serviços e volumes de contentores sem nome apenas quando estejam
+dentro do âmbito confirmado e possam ser afetados.
 
 Se a plataforma usar configuração central e units systemd, declara os caminhos
 no mecanismo aprovado, com permissões adequadas ao modelo de privilégio. Uma
@@ -41,6 +41,11 @@ estado intermédio. Documenta dependências, escritas pendentes e condições pa
 retomar antes de dividir a operação.
 
 ## Mecânica por família
+
+Aplica os passos seguintes às famílias classificadas acima. Um pedido apenas de
+plano produz decisões, comandos propostos e condições de recuperação; não
+executa cópia, paragem de escritores ou cutover sem a respetiva autorização.
+A autorização existente mantém-se válida dentro do âmbito que cobre.
 
 1. Inventaria caminhos relativos, contagens, bytes, checksums e metadados
   relevantes (proprietário e modos, quando aplicável). Device e inode ajudam a

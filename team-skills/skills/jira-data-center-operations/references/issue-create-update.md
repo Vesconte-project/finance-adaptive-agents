@@ -1,9 +1,11 @@
 # Issue creation and simple updates
 
 Use this reference for a single requested issue creation or a bounded field/comment/assignee
-change. It is based on a tested local pattern of authenticating first and then submitting a
-REST issue creation request, but exact resources, authentication headers, field names, and
-required values must be verified against the target Jira version and project.
+change. The source account described a locally tested sequence of authenticating first
+and then submitting a REST issue creation request. Its instance/version, test artifacts and
+receipt are not included here: this is reported provenance, not reproduced validation or
+evidence about the user's instance. Verify exact resources, authentication headers, field
+names and required values against the target Jira version and project.
 
 Before writing, confirm the requested project, issue type, summary or target issue key,
 intended fields, and acting identity. Discover required and allowed fields through current

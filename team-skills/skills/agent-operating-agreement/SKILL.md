@@ -52,10 +52,18 @@ custa-lhe contexto e tempo.
 
 ## Decidir
 
-- Com default sensato: decide e documenta a assunção no artefacto de revisão
-  aplicável, se o fluxo do repositório o prever, e continua.
-- Sem default: pergunta, mas só nas que são irreversíveis, de política, ou que
-  mudam a forma de trabalhar do humano (credenciais, grupos, acessos).
+- Com default sensato, efeito reversível e dentro do âmbito já autorizado:
+  decide, documenta a assunção no artefacto de revisão aplicável e continua.
+  Confirma os factos essenciais; um default não substitui autorização nem prova
+  compatibilidade ou disponibilidade do serviço.
+- Decisões irreversíveis, de política ou que alterem credenciais, grupos ou
+  acessos precisam de autorização explícita para esse efeito. Usa a autorização
+  já dada quando cobrir a decisão; não peças confirmação de novo por rotina.
+  Se faltar essa cobertura ou surgir uma mudança material de risco/âmbito,
+  apresenta a decisão concreta e obtém a autorização em falta antes de executar.
+- Uma dúvida não exige parar todo o trabalho: resolve escolhas reversíveis em
+  âmbito e prossegue nas partes independentes. Reporta pressupostos não
+  verificados; não executes um passo que dependa de um facto essencial incerto.
 - Quando uma regra local do repositório te bloquear, pára e reporta em vez de
   contornar em silêncio.
 

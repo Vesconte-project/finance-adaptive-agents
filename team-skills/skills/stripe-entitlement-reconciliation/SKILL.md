@@ -21,7 +21,15 @@ and persistence capabilities before implementation. This describes a design meth
 
 ## Safe purchase and reconciliation
 
-1. Create Checkout Sessions server-side for the **authenticated internal account** and its Stripe Customer; persist a purchase attempt/idempotency key. Do not treat an editable Payment Link URL parameter or arbitrary metadata user ID as proof of the buyer.
+1. Create Checkout Sessions server-side for the **authenticated internal account** and its
+   Stripe Customer. Resolve the plan/Price and validate client-supplied purchase options
+   against the server's authorized catalog and commercial rules for that account and
+   environment, including quantity, billing interval and discounts where applicable.
+   A client-supplied Price ID is a selection input, not authority to buy that offer.
+   A maintained allowlist is one option; a static list is not required if equivalent
+   server-side catalog/rule validation exists. Persist a purchase attempt/idempotency key.
+   Do not treat an editable Payment Link URL parameter or arbitrary metadata user ID as
+   proof of the buyer.
 2. Verify webhook signatures against the **raw request body** and environment-specific endpoint secret. Durable-inbox the event ID with uniqueness, acknowledge promptly, and reconcile asynchronously.
 3. Expect duplicates, retries and out-of-order events. Serialize reconciliation for each billing account or enforce monotonically correct state. Fetch current subscription and the complete paginated active-entitlements list from
    Stripe; summary payloads may be truncated. An old event must not overwrite new account
@@ -46,7 +54,7 @@ accounts when billing state is unknown.
 
 ## Verification checklist
 
-- Two concurrent purchases for one account; mismatched Customer; modified `client_reference_id`; webhook replay; cancellation before renewal event; late entitlement event; forced reconciliation failure; concurrent downgrade/job create.
+- Unauthorized or wrong-environment Price, altered quantity/discount; two concurrent purchases for one account; mismatched Customer; modified `client_reference_id`; webhook replay; cancellation before renewal event; late entitlement event; forced reconciliation failure; concurrent downgrade/job create.
 - Compare local projection with Stripe by account and `environment`; record why access was granted/denied.
 - Stop before changing active prices, subscriptions or production webhooks without an explicit authorized change.
 
@@ -60,3 +68,6 @@ accounts when billing state is unknown.
 
 Webhook and Entitlements documentation rechecked 2026-10-19; verify the target
 API version and integration before relying on provider behavior.
+
+Checkout parameter documentation rechecked 2026-10-20; authorized offer selection is an
+application policy, not a guarantee provided by accepting a valid Stripe Price ID.

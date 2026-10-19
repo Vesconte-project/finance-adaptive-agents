@@ -14,7 +14,8 @@ precedência genérica. Separa caminhos de credenciais quando isso corresponder
 ao modelo de segurança. O serviço precisa apenas das permissões necessárias no
 estado e artefactos, não de escrita na release.
 
-Num `plan` autorizado, compara o contrato com os serviços, destinos, permissões,
-receipts e caminhos realmente usados no host. No `apply`, verifica o processo ou
+Numa fase de planeamento/verificação autorizada, compara o contrato com os serviços, destinos, permissões,
+receipts e caminhos realmente usados no host. Na ativação autorizada, verifica o processo ou
 flow que usa a release e grava `verified` só depois de obter evidência adequada.
+Estas são fases do trabalho, não comandos de uma ferramenta incluída nesta Skill.
 Um exemplo de unit ou JSON de outra máquina não serve como contrato instalável.

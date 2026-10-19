@@ -1,9 +1,9 @@
 ---
 name: greenfield-host-setup
-description: Planear a primeira instalação de um host de produção apenas quando dados persistentes estão num checkout/volume que o deploy ou rebuild pode substituir, e o workflow de deploy executa código/entradas controláveis por contribuidores menos confiáveis com acesso a recursos de produção. Sem ambas as condições, não se aplica.
+description: Planear a primeira instalação de um host de produção quando o desenho planeado ou herdado colocaria estado persistente num checkout/volume substituível pelo deploy/rebuild e permitiria a código/entradas menos confiáveis alcançar recursos de produção pelo deploy. Sem ambos os riscos no desenho, não se aplica.
 ---
 
-# Dia 1 de um servidor que vai importar
+# Dia 1: corrigir os riscos do desenho antes da instalação
 
 Esta é uma lista de decisões a avaliar antes da primeira instalação, não uma
 receita de plataforma. Confirma sistema operativo, runtime, dados, disponibilidade,
@@ -15,11 +15,15 @@ dependem do ambiente.
 
 Confirma ambas as condições antes de usar esta skill:
 
-1. Dados persistentes estão dentro de um checkout, volume implícito ou outro
-  caminho que o deploy/rebuild realmente substitui, limpa ou recria.
-2. O workflow executa código ou entradas (por exemplo, pull requests ou
-  artefactos) que contribuidores menos confiáveis podem controlar, e esse
-  workflow consegue alcançar credenciais ou recursos de produção.
+1. O desenho planeado ou herdado colocaria dados persistentes num checkout,
+   volume implícito ou caminho que o deploy/rebuild substituiria, limparia ou
+   recriaria. Confirma o comportamento previsto nas definições reais do fluxo;
+   não é necessário que os dados já estejam instalados.
+2. O workflow planeado ou herdado permitiria executar código ou entradas (por
+   exemplo, pull requests ou artefactos) controláveis por contribuidores menos
+   confiáveis num contexto capaz de alcançar credenciais ou recursos de produção.
+   Verifica os triggers, runners e acessos previstos, sem presumir execução já
+   observada no host.
 
 Se qualquer condição faltar, esta skill não se aplica; escolhe orientação
 específica ao problema real.
@@ -143,6 +147,12 @@ Antes de dizeres que está pronto, prova cada uma destas:
 
 - [ ] Foram identificados os serviços, estado persistente e políticas de deploy
   que se aplicam a este host.
+- [ ] O estado persistente ficou fora de qualquer caminho que o deploy, rebuild
+  ou cleanup substitui ou recria, confirmado contra o workflow real; uma lista
+  de diretórios proposta não basta como prova do estado instalado.
+- [ ] Código ou entradas de contribuidores menos confiáveis não conseguem
+  alcançar credenciais ou recursos de produção pelo deploy, confirmado contra
+  triggers, runner, proveniência e configuração real de acesso a segredos.
 - [ ] Permissões e identidades efetivas foram verificadas pelas interfaces
   suportadas; não se inferiu acesso apenas por grupos ou nomes.
 - [ ] O deploy e o rollback foram testados num ambiente/fluxo seguro, se

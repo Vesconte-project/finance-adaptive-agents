@@ -3,7 +3,7 @@ name: orchestrator-runtime-ops
 description: Operar workers e deployments Prefect num host partilhado com serviços de produção, quando um restart, mudança de identidade ou deploy pode interromper trabalho agendado. Usa após confirmar que o ambiente é Prefect e que a versão/API corresponde; não para outros motores ou operação genérica de jobs.
 ---
 
-# Orquestradores: o que parte quando se mexe
+# Prefect no host partilhado: o que parte quando se mexe
 
 Esta skill trata de ambientes Prefect. Os exemplos pressupõem uma API e um
 modelo de deployments compatíveis com a versão em que foram escritos; confirma
@@ -24,23 +24,33 @@ deixar dados parciais. Usa apenas consultas compatíveis com a API confirmada e
 com acesso autorizado, pedindo apenas os campos necessários e removendo
 segredos dos resultados apresentados.
 
-```bash
-# Exemplo: primeira página; confirma endpoint/API e autenticação antes de usar.
-curl -fsS -X POST "$API/flow_runs/filter" -H 'content-type: application/json' \
-  -d '{"limit":10,"offset":0,"flow_runs":{"state":{"type":{"any_":["RUNNING","PENDING"]}}}}'
+Não há aqui um JSON de filtro universal: consulta o OpenAPI/schema do servidor
+ou os modelos/métodos do cliente **instalado** antes de construir a consulta.
+Regista os seguintes critérios e valida que o pedido realmente os aplica:
 
-# Exemplo: primeira página de agendamentos; aplica o intervalo relevante.
-curl -fsS -X POST "$API/flow_runs/filter" -H 'content-type: application/json' \
-  -d '{"limit":10,"offset":0,"sort":"EXPECTED_START_TIME_ASC","flow_runs":{"state":{"type":{"any_":["SCHEDULED"]}}}}'
-```
+- âmbito: pools, queues, deployments e instâncias potencialmente afetados;
+- estados com processos, submissão ou efeitos ainda possíveis, incluindo
+  transições/cancelamentos relevantes para essa versão. `RUNNING` e `PENDING`
+  sozinhos não demonstram ausência de trabalho em risco; cruza com processos
+  e serviço quando o estado da API não seja suficiente;
+- janela de agendamentos: limites inferior e superior explícitos, timezone e
+  campo temporal suportado. Confirma na resposta que o filtro cobre a janela
+  pretendida, incluindo runs atrasadas e retries conforme o modelo instalado;
+- paginação, ordenação e sinal de completude da versão confirmada. Uma página
+  vazia ou dez resultados não bastam quando filtros/total não foram verificados.
 
-Cada comando mostra apenas uma página. Para decidir se é seguro reiniciar, usa a
-paginação e o sinal de total/fim de página suportados pela versão confirmada até
-cobrir todas as runs ativas e todos os agendamentos da janela relevante; não
-interpretes 10 resultados como lista completa. Se a API não indicar completude,
-declara a incerteza e não concluas que não há trabalho. `-f` e `-S` fazem erros
-HTTP/transporte falharem visivelmente; uma falha não é uma resposta vazia. Atualiza
-a consulta imediatamente antes do restart para reduzir corridas com novas runs.
+Autentica pelo mecanismo seguro já configurado do cliente, sem tokens na linha
+de comando. Evita imprimir respostas completas: a recolha autorizada pode
+conter parâmetros e job variables secretos. Projeta apenas IDs necessários,
+estado e instantes relevantes depois de validar a forma da resposta; nomes e
+mensagens livres também precisam de sanitização. Não uses `curl -v`, tracing ou
+ficheiros de resposta desprotegidos para investigar credenciais.
+
+Falha HTTP, transporte, parsing ou cobertura incompleta é uma verificação
+falhada, não ausência de runs. Em pipelines shell usa `set -o pipefail` e
+confirma cada estado de saída; mantém a resposta original fora dos logs.
+Atualiza a consulta imediatamente antes do restart e considera a corrida com
+novas submissões: só uma política/gate apropriado pode controlar essa janela.
 
 Calcula janelas livres com os agendamentos e duração observada dos trabalhos.
 Acrescenta uma margem apenas conforme a política e variabilidade desse
@@ -58,7 +68,13 @@ se uma run pode ser retomada.
 a persistência de registos `ONLINE` dependem da versão e configuração; confirma
 o comportamento real antes de os usar como evidência.
 
-- Exige um **heartbeat posterior** ao instante em que a mudança começou.
+- Liga o heartbeat à **nova instância e release**: PID com start time,
+  invocation do serviço e identificador único do worker quando disponíveis.
+  Exige heartbeat dessa instância depois de arrancar; só nome reutilizado e
+  timestamp posterior não excluem o processo antigo ou outro concorrente.
+  Se faltar identidade única, corrobora logs da nova invocation e release,
+  demonstrando que as instâncias anteriores/concorrentes não emitem com o
+  mesmo nome. Sem essa ligação, readiness fica não verificada.
 - Uma execução terminada com sucesso pode testar um caminho adicional apenas
   se houver autorização explícita e um canary seguro, idempotente e sem efeitos
   externos indesejados. O sucesso valida só o caminho exercitado; não prova que
@@ -78,17 +94,13 @@ então compara os commits configurados com a release.
 - publicar as definições tem de ser verificado depois, comparando o commit
   fixado em cada deployment com o da release.
 
-```bash
-curl -fsS -X POST "$API/deployments/filter" -H 'content-type: application/json' -d '{"limit":200}' \
- | python3 -c "import json,sys,collections; print(collections.Counter((s['prefect.deployments.steps.git_clone']['repository'], s['prefect.deployments.steps.git_clone']['commit_sha'][:10]) for d in json.load(sys.stdin) for s in (d.get('pull_steps') or []) if 'prefect.deployments.steps.git_clone' in s))"
-```
-
-Este exemplo só se aplica à API Prefect confirmada, com endpoint configurado e
-consulta autorizada; autentica pelo mecanismo seguro do cliente, sem tokens na
-linha de comando. O limite de 200 é apenas uma página: pagina conforme o schema
-da versão e confirma o total antes de tratar o resultado como inventário
-completo. Um erro HTTP ou de transporte deve ser reportado, não contado como
-lista vazia.
+Para inspecionar uma recolha JSON já autorizada, lê
+[references/safe-deployment-inventory.md](references/safe-deployment-inventory.md).
+O exemplo valida a forma antes de imprimir uma projeção sem URLs e representa
+a ausência de commit fixado como achado. Não recolhe dados nem certifica que o
+servidor executará o commit: confirma a implementação do pull step instalada,
+pagina com completude verificada e compara com o código efetivamente resolvido.
+Um erro não pode virar um inventário vazio.
 
 **Consequência ao mudar a identidade do worker:** se a configuração clonar em
 runtime, confirma os aliases SSH, `known_hosts` e `HOME` efetivos da identidade
@@ -147,10 +159,15 @@ nunca atualizes runs em bloco por filtro.
 
 ## Versões entre servidor e workers
 
-Servidor e workers são cliente e servidor da mesma API. Se vierem de locks
-diferentes, divergem sem ninguém decidir. Define a versão de referência, fixa-a
-nos dois lados e verifica publicação, heartbeat e uma execução real após
-qualquer atualização.
+Compara as versões e locks do servidor e workers com a matriz de compatibilidade
+da instalação; versões diferentes não provam incompatibilidade por si só.
+Define a referência suportada antes de propor alterações. Só fixa/altera versões
+ou publica definições com autorização para essa mudança, reutilizando a que já
+cobrir o âmbito, e com recuperação planeada. Depois de uma atualização autorizada,
+verifica publicação e heartbeat da nova instância/release. Uma execução real
+segue exatamente a regra de canary aprovado, seguro e idempotente de “Provar que
+um worker trabalha”; sem esse canary, usa evidência não mutante e declara a
+limitação. Um pedido de diagnóstico não autoriza upgrade nem execução de flows.
 
 ## Quando não aplicar
 
@@ -158,3 +175,11 @@ Se o orquestrador corre noutra máquina, ou se o trabalho agendado é irrelevant
 e idempotente, a maior parte disto não compensa. O peso justifica-se quando o
 orquestrador partilha o host com os serviços e o trabalho escreve em dados que
 te importam.
+
+## Fontes de implementação
+
+Consultadas em 20/10/2026: [pull steps Prefect](https://reference.prefect.io/prefect/deployments/steps/pull/)
+[armazenamento de código](https://docs.prefect.io/v3/how-to-guides/deployments/store-flow-code),
+[filtros de runs](https://reference.prefect.io/prefect/server/schemas/filters/) e
+[cliente de orquestração](https://reference.prefect.io/prefect/client/orchestration/).
+Documentação online não estabelece o schema ou assinatura da instalação alvo.

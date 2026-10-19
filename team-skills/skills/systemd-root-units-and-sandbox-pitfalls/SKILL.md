@@ -30,8 +30,15 @@ For the details, read
 
 To find root execution paths writable by an unprivileged account:
 
-1. **Pick the right units.** Enumerate the **system manager's** service units
-   (`systemctl list-unit-files`, not `--user`); a user manager's units run as that user.
+1. **Pick the right units.** Inventory the **system manager**, not just a user manager:
+   inspect both `systemctl --system list-unit-files --type=service --no-pager` for installed
+   files/templates and `systemctl --system list-units --type=service --all --no-pager` for
+   currently loaded instances, including active, failed and transient services. Reconcile the
+   union by unit identity and inspect relevant templates, runtime/generated configuration and
+   drop-ins. Record command failures, access limits, version and capture time; neither listing
+   alone nor their union proves every short-lived service over an interval was captured.
+   Recheck or use authorised lifecycle records if services can appear during the audit. A user
+   manager's units run as that user; include its privileged interactions only when in scope.
 2. **Establish the effective identity** with `systemctl show -p User -p DynamicUser <unit>`.
    Resolve `User=` to its numeric UID: `root`, `0`, or another account resolving to UID 0
    are all root identities. An unset `User=` in a system service normally defaults to root
@@ -50,3 +57,5 @@ To find root execution paths writable by an unprivileged account:
 
 Distinguish executable or configuration paths from runtime sockets and data paths. One instance
 found by accident usually means the question was never asked systematically.
+
+Inventory references checked 2026-10-20: [systemctl list-units/list-unit-files](https://www.freedesktop.org/software/systemd/man/latest/systemctl.html) and [systemd.unit load paths](https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html). Check the installed release; listing output is a time-bound view, not a universal completeness guarantee.

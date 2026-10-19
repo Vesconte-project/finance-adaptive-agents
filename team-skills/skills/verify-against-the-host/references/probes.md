@@ -4,7 +4,9 @@ Estes exemplos não são garantidamente read-only nem seguros para qualquer host
 Antes de os usar, confirma sistema, caminho, unidade, identidade, autorização e
 necessidade. Alguns contactam remotos, executam código ou podem revelar dados.
 Se não houver acesso aprovado, pede a evidência ao operador e declara o que não
-foi verificado. Filtra/redige a saída antes de a partilhar.
+foi verificado. Filtra/redige a saída antes de a partilhar. Executa os blocos como scripts ou
+numa subshell apropriada: `exit` termina a shell e opções como `pipefail`
+persistem se forem coladas diretamente numa sessão interativa.
 
 ## Estado geral
 
@@ -17,7 +19,7 @@ systemctl list-units 'PREFIXO-*' --all --no-pager
 systemctl show UNIT -p User -p Group -p ExecStart -p WorkingDirectory \
   -p ProtectHome -p NoNewPrivileges -p ProtectSystem -p Restart -p RestartUSec
 systemctl list-dependencies --reverse --plain UNIT
-systemd-analyze verify /etc/systemd/system/UNIT   # devolve 0 se está consistente
+systemd-analyze verify /etc/systemd/system/UNIT   # diagnóstico estático; não prova execução
 ```
 
 ## Repositório versus instalado
@@ -108,9 +110,9 @@ políticas próprias.
 
 ```bash
 awk '/^Host /{h=$2} /IdentityFile/{print h" -> "$2}' ~/.ssh/config
-ssh -G github.com | grep -E '^(hostname|identityfile) '
+ssh -G HOST_CONFIRMADO | grep -E '^(hostname|identityfile) '
 GIT_SSH_COMMAND="ssh -i CHAVE -o IdentitiesOnly=yes -o BatchMode=yes" \
-  git ls-remote REPO refs/heads/main                       # tem leitura?
+  git ls-remote REPO REF_CONFIRMADA                       # tem leitura?
 ```
 
 Usa o comando remoto apenas com autorização e sem expor credenciais ou URLs
@@ -121,24 +123,79 @@ com tokens; interpreta erros segundo a documentação do provider.
 Os caminhos seguintes são exemplos: substitui-os apenas por releases cuja
 origem foi confirmada e que tens autorização para inspecionar.
 
+Com Python 3 disponível, a sonda seguinte enumera symlinks sem percorrer
+subdiretórios que sejam symlinks. Confirma também autorização para resolver os
+seus destinos; não amplia acesso. Emite JSON por registo, escapando nomes com
+newlines, e termina com código não zero se a enumeração ou resolução falhar.
+`inconclusive` não significa link quebrado: pode ser falta de acesso, alvo
+ausente, loop ou uma mudança concorrente.
+
 ```bash
-for l in /srv/PROJ/current/*; do echo "$(basename $l) -> $(readlink $l)"; done
-find RELEASE -type l | while read l; do
-  printf '%s -> %s\n' "$l" "$(readlink -f "$l" 2>/dev/null || echo QUEBRADO)"
-done
-stat -c '%U:%G %a %n' RELEASE/*
-head -1 RELEASE/.venv/bin/CLI    # shebang aponta para onde?
+python3 - "$RELEASE" <<'PY'
+import json
+import os
+import stat
+import sys
+from pathlib import Path
+
+failures = 0
+count = 0
+
+def emit(record):
+    print(json.dumps(record, ensure_ascii=True))
+
+def walk_error(error):
+    global failures
+    failures += 1
+    emit({"path": os.fsdecode(error.filename) if error.filename else None,
+          "status": "inconclusive", "error": type(error).__name__})
+
+try:
+    root = Path(sys.argv[1]).resolve(strict=True)
+    if not stat.S_ISDIR(root.stat().st_mode):
+        raise NotADirectoryError(str(root))
+except (OSError, RuntimeError) as error:
+    emit({"status": "inconclusive", "error": type(error).__name__})
+    raise SystemExit(1)
+
+for directory, dirs, files in os.walk(root, followlinks=False, onerror=walk_error):
+    for name in sorted(dirs + files):
+        path = Path(directory) / name
+        try:
+            if not stat.S_ISLNK(path.lstat().st_mode):
+                continue
+            count += 1
+            target = path.resolve(strict=True)
+            emit({"path": str(path.relative_to(root)), "status": "resolved",
+                  "target": str(target)})
+        except (OSError, RuntimeError) as error:
+            failures += 1
+            emit({"path": str(path.relative_to(root)), "status": "inconclusive",
+                  "error": type(error).__name__})
+emit({"symlinks": count, "failures": failures})
+raise SystemExit(1 if failures else 0)
+PY
 ```
+
+A lista vazia não prova que existiam links nem que a release é íntegra. Uma
+resolução é uma observação momentânea; compara inventário e destinos com o
+contrato esperado e considera mudanças concorrentes. Não altera links nem
+conclui igualdade de releases. Para o launcher Python, se existir, inspeciona
+separadamente o shebang do CLI confirmado e testa-o só no ambiente autorizado.
 
 ## Compatibilidade de API entre cliente e servidor
 
 Só consulta um endpoint real se a API, autenticação e acesso estiverem
 confirmados e autorizados. A resposta pode revelar schema interno; guarda-a num
 destino aprovado, filtra a saída e usa `-f` para não confundir erros HTTP com
-respostas válidas.
+respostas válidas. O exemplo Python executa código do projeto e pressupõe
+Pydantic v2 (`model_fields`) e aquele schema OpenAPI; confirma esses contratos
+antes de o usar. Uma falha de transporte/HTTP interrompe o bloco antes da
+comparação: um ficheiro existente ou parcial não é evidência desta consulta.
+Não reutilizes esse destino como resposta válida depois de uma falha.
 
 ```bash
-curl -fsS SERVIDOR/openapi.json -o DESTINO_APROVADO/spec.json
+curl -fsS SERVIDOR/openapi.json -o DESTINO_APROVADO/spec.json || exit 1
 VENV/bin/python -c "
 import json; from pkg.schemas import Modelo
 s=json.load(open('DESTINO_APROVADO/spec.json'))['components']['schemas']['Modelo']
@@ -155,7 +212,7 @@ redige antes de partilhar.
 ```bash
 systemctl list-timers --all --no-pager
 systemctl show UNIT -p Result -p ExecMainStatus -p ExecMainExitTimestamp
-journalctl -u UNIT --since "48 hours ago" | grep -iE "r2|rclone|Transferred|error"
+journalctl -u UNIT --since "48 hours ago" | grep -iE "PADRAO_CONFIRMADO_DO_BACKUP"
 ls -la DESTINO_DOS_DUMPS | tail -3
 ```
 
@@ -178,3 +235,8 @@ executam código e podem alterar ficheiros ou contactar serviços.
 ```bash
 PYTHONPATH=hostile python3 -m unittest discover -s tests
 ```
+
+O `sitecustomize.py` acima simula só `pwd.getpwnam` e `grp.getgrnam` para os
+nomes indicados. Não cobre `getpwuid`, `getgrgid`, subprocessos como `id` nem
+outros mecanismos de resolução; um teste verde não prova ausência de todas
+as dependências de contas locais.

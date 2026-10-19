@@ -69,7 +69,7 @@ adequado e de um resultado que permita distinguir sucesso vazio, dados
 analisados e formato inválido. Exige pelo menos um valor apenas quando o
 contrato desse input o requer.
 
-## Deteção por nome é uma lista negra que perde sempre
+## Deteção apenas por nome pode deixar lacunas
 
 Uma regra como `(?:TOKEN|SECRET|PASSWORD|API_KEY|DATABASE_URL|DSN)$` parece
 razoável e pode falhar no primeiro nome que alguém inventar. Exemplos de nomes
@@ -89,10 +89,22 @@ A tentação é dar ao guarda acesso ao que lhe falta — meter a identidade num
 grupo, abrir um `0600` para o grupo. Isso resolve a verificação e alarga a
 superfície. Alternativas, por ordem de preferência:
 
-1. **Uma fase privilegiada separada** que lê o que é preciso e emite um
-   **veredicto** assinado pelo contexto: intervalo, hashes dos próprios
-   verificadores, hora, resultado. A parte sem privilégios exige o veredicto e
-   recusa se faltar, estiver expirado, ou pertencer a outro intervalo.
+1. **Uma fase privilegiada separada**, se o modelo de ameaça justificar essa
+   fronteira, que lê os inputs e emite um **recibo de verificação** protegido
+   contra alteração por quem não deve poder produzir um `PASS`. Liga-o aos
+   inputs exatos verificados (identidade/versão ou snapshot consistente), à
+   configuração/política e à versão ou digest do verificador, ao âmbito e ao
+   resultado. Não incluas segredos nem digests de segredos de baixa entropia num
+   recibo visível a identidades que não os podem ler.
+   O consumidor verifica essa ligação e a frescura exigida pela operação; hora
+   ou intervalo isolados não impedem replay. Define como rejeitar um recibo de
+   outros inputs/configuração ou reutilizado quando se exige uma nova execução,
+   e como manter a ligação entre verificação e uso se os inputs puderem mudar.
+   Permissões de um canal/ficheiro controlado podem bastar no modelo escolhido;
+   assinatura criptográfica é opcional. Se usada, define quem pode assinar,
+   proteção/rotação da chave e como o consumidor confia na chave de verificação.
+   Recusa recibos ausentes, incompatíveis, expirados ou inválidos segundo esse
+   contrato; a separação privilegiada não é por si uma prova de segurança.
 2. **Comparação por digest** — só se o que procuras tem fronteiras conhecidas.
    Não serve para procurar um segredo como substring de um ficheiro arbitrário:
    para isso precisarias de enumerar candidatos ou de dar ao processo material
@@ -110,13 +122,21 @@ automaticamente a outros runtimes.
 
 ## Recolhe evidência do privilégio e da leitura
 
-Não aprove um desenho destes por doutrina. Faz o guarda **imprimir** o que
-provaria a dúvida, e exige essa linha no journal:
+Não aproves o desenho só pela intenção. Exige evidência observável no mecanismo
+de logs/recibos do runtime: identidade efetiva esperada segundo o contrato,
+invocação, fase, inputs requeridos e lidos, resultado da análise e veredicto.
+No Linux, `euid` pode demonstrar parte da identidade; o valor esperado depende
+do desenho autorizado, não tem de ser root. Exemplo de campos, não de resultado
+obrigatório nem prova isolada de cobertura:
 
 ```
-source_secret_phase=pre euid=0 probe=1
-source_secret_probe phase=pre required_inputs=<count> analyzed_values=<count> verdict_write=PASS
+phase=<phase> effective_identity=<expected-identity> invocation=<id>
+required_inputs=<count> read_inputs=<count> analyzed_values=<count> result=<result>
 ```
+
+Correlaciona os registos à mesma execução e aos inputs/configuração verificados;
+uma contagem ou linha `PASS` isolada não substitui esse contrato. Não imprimas
+valores secretos como evidência. Usa o journal só quando o alvo o utilizar.
 
 Se o alvo usar Linux/systemd e essa evidência for necessária, uma unit de prova
 de runtime em `/run/systemd/system` (ou uma transitória criada por API) pode testar parte das diretivas de sandbox.
@@ -184,7 +204,7 @@ Para distinguir falha de execução de resultado lógico e decidir a consequênc
 - `except PermissionError: continue` em código de verificação.
 - Um `PASS` sem contagem de inputs.
 - Um guarda que nunca disse NÃO desde que foi instalado.
-- Uma allowlist por caminho, ficheiro ou identidade.
+- Uma allowlist só por caminho, ficheiro ou identidade, sem ligação ao objeto/conteúdo esperado.
 - Uma regra de deteção construída com sufixos de nomes.
 - Uma etapa privilegiada cujo privilégio ninguém demonstrou.
 - Um lock com caminho literal diferente do que a outra parte usa.
@@ -196,7 +216,11 @@ excesso. O peso justifica-se quando o guarda corre com identidade reduzida,
 tem vários inputs de formatos diferentes, ou é a última coisa entre um segredo
 e um sítio de onde não se apaga.
 
-## Relacionadas
+## Relacionadas (opcionais)
+
+As notas seguintes são apenas descoberta adicional se essas Skills estiverem
+instaladas. Não são pré-requisitos nem passos deste procedimento; o pacote
+inclui o conhecimento necessário para o seu âmbito.
 
 - `verify-against-the-host`: como rever o que um agente afirma.
 - `host-mutation-batches`: onde um lote prova as suas próprias verificações.

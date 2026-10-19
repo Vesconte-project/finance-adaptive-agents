@@ -15,7 +15,7 @@ plataforma, os caminhos existentes, proprietários, mounts e permissões
 autorizadas; escolhe destinos compatíveis com o serviço e a política local:
 
 ```text
-/srv/PROJ/releases/<componente>/<commit-id>/  exemplo de release
+/srv/PROJ/releases/<componente>/<build-id>/  exemplo de release
 /srv/PROJ/current/<componente> -> uma release
 /srv/PROJ/state/                             exemplo de estado externo
 /srv/PROJ/artifacts/                         exemplo de artefactos externos
@@ -31,7 +31,8 @@ mesmo filesystem e de permissões confirmadas.
 Um componente é a unidade que se implanta e se reverte. Um repositório pode
 dar vários componentes (uma API, um worker, um job agendado) e um componente
 pode juntar vários repositórios (um runtime composto, fixado por um
-`runtime-lock.json` no repositório principal).
+lockfile de runtime, por exemplo `runtime-lock.json`, no repositório principal
+ou noutro destino acordado).
 
 Cada componente declara, conforme aplicável: origem e SHA, tipo de build,
 serviços e timers, identidade de runtime, readiness, estado, dependências e
@@ -52,8 +53,15 @@ host sem uma interface de configuração explícita.
   lockfiles e instalação não editável quando suportados pelo projeto.
 4. Testar importações e execução com a identidade de runtime, se o serviço
   permitir esse teste sem efeitos secundários.
-5. Renomear para o nome definitivo e escrever `RELEASE.json` com repositório,
-   SHA, extras, versão do interpretador, hash do contrato e data.
+5. Escolher a identidade do build: o mesmo commit pode produzir artefactos
+  diferentes com outro runtime, dependências, extras ou contrato. Inclui uma
+  identidade de build adequada no destino; escreve um registo (por exemplo,
+  `RELEASE.json`) com origem, SHA, identidade de build, entradas e dependências
+  relevantes, runtime e data; hash do contrato quando exista. Interpretador e
+  extras são campos de um runtime Python, não campos universais. Antes de
+  publicar o staging no caminho definitivo, rejeita colisões sem sobrescrever.
+  Só reutiliza um destino existente se a equivalência de proveniência e
+  conteúdo estiver demonstrada; mesmo SHA sozinho não a demonstra.
 6. Aplicar propriedade e modos segundo o modelo de privilégio verificado; não
   assumes root, um grupo específico ou estes modos sem validar a política do
   host.
@@ -99,8 +107,12 @@ mudança**.
 
 - HTTP: se existir um endpoint versionado e o teste estiver autorizado, verifica
   a versão nova em vez de confiar apenas num `/health` genérico.
-- Workers com heartbeat: se aplicável, exige heartbeat **posterior** ao início
-  da ativação.
+- Workers com heartbeat: se aplicável, associa a prova à nova instância e
+  release (PID/start time, invocation e worker ID quando disponíveis), e exige
+  heartbeat dessa instância depois do arranque. Nome reutilizado e timestamp
+  posterior podem pertencer ao processo antigo ou a um concorrente. Se não
+  houver ID único, corrobora logs/release e exclui emissores anteriores ou
+  concorrentes; caso contrário reporta readiness não verificada.
 - Processo: quando o runtime permitir, confirma `cwd`, executável e `PATH`
   efetivos sem expor dados sensíveis.
 - Interface pública: se existir e o operador autorizar o teste, verifica o
@@ -123,7 +135,9 @@ apagues a única cópia recuperável nem assumas um número fixo de releases.
 
 Para definir contrato, unit e caminhos de estado, consulta
 [references/component-contract.md](references/component-contract.md). Os
-ficheiros instaláveis pertencem ao repositório que governa o host.
+ficheiros instaláveis pertencem ao repositório ou sistema de configuração
+que governa o host, **se existir**. Caso contrário usa o destino acordado e
+autorizado para esse ambiente; não cries uma estrutura de governação implícita.
 
 ## Quando não aplicar
 

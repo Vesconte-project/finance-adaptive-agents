@@ -70,31 +70,84 @@ e [environ(7)](https://man7.org/linux/man-pages/man7/environ.7.html), consultado
 **2. Inspeciona a unit e as fontes declaradas sem imprimir valores.**
 
 ```bash
-systemctl show UNIT -p FragmentPath -p DropInPaths -p EnvironmentFiles
-systemctl cat UNIT | sed -n -E '/^[[:space:]]*Environment=/ { s/=.*/=<redacted>/; p; }; /^[[:space:]]*EnvironmentFile=/p'
+systemctl show UNIT -p FragmentPath -p DropInPaths -p EnvironmentFiles || exit 1
 ```
 
-Executa apenas com acesso autorizado. O filtro mostra a presença de `Environment=`
-sem os seus valores e mantém as fontes declaradas em `EnvironmentFile=`. Confirma
-se a versão instalada suporta `EnvironmentFiles` em `systemctl show`; inspeciona
-os drop-ins indicados por `DropInPaths` em vez de assumir um diretório fixo. Não
-imprimas o conteúdo dos ficheiros de ambiente.
+Executa como script Bash ou numa subshell com acesso autorizado; `exit` termina
+a shell se o colares numa sessão interativa. Uma falha torna a inspeção
+inconclusiva, mesmo que não haja saída: não a interpretes como ausência de
+fontes. A projeção mostra apenas os caminhos/propriedades pedidos, sem valores
+de `Environment=` nem conteúdo dos ficheiros. Os próprios caminhos podem ser
+internos; partilha-os só dentro do âmbito autorizado. Confirma se a versão
+instalada suporta `EnvironmentFiles` em `systemctl show`; segue os caminhos
+indicados por `FragmentPath` e `DropInPaths`, sem assumir um diretório fixo.
+Não filtres `systemctl cat` com expressões regulares para o tornar seguro:
+continuações de linha podem parecer outras diretivas. Se for indispensável
+inspecionar diretivas declaradas, obtém uma projeção redigida por um mecanismo
+revisto que compreenda a sintaxe da unit, ou pede essa evidência ao operador;
+não imprimas o conteúdo bruto nem inventes um parser durante o incidente.
 
 **3. Investiga fontes externas apenas se existirem no fluxo real.** Se um
 orquestrador, agendador ou wrapper lançar o processo, usa a interface e o
 esquema documentados para esse sistema; não assumas que existe uma API local.
-Por exemplo, se a API e os campos forem confirmados e a consulta estiver
-autorizada, extrai apenas os nomes das chaves:
+Por exemplo, usa uma consulta de deployments apenas depois de confirmar na
+versão alvo que **o endpoint e a operação têm semântica de leitura**. O método
+HTTP por si só não decide isso: Prefect documenta uma consulta por `POST`.
+Seleciona só o deployment necessário por ID/filtro confirmado no schema, com
+limite adequado; não uses uma listagem geral como diagnóstico inicial.
 
 ```bash
-# exemplo: definições de deployment guardadas na base do orquestrador
-curl -s -X POST http://127.0.0.1:PORTA/api/deployments/filter \
-  -H 'content-type: application/json' -d '{"limit":200}' \
-  | python3 -c "import json,sys; [print(d['name'], sorted((d.get('job_variables') or {}).get('env',{}))) for d in json.load(sys.stdin)]"
+# exemplo condicionado à API real; filtro contém apenas os IDs autorizados
+# e um limite necessário, segundo o schema confirmado, sem segredos
+set -o pipefail
+curl --fail --silent -X POST http://127.0.0.1:PORTA/api/deployments/filter \
+  -H 'content-type: application/json' --data-binary @FILTRO_APROVADO.json \
+  | python3 -c '
+import json
+import sys
+
+def names_only(rows):
+    if not isinstance(rows, list):
+        raise ValueError
+    names = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            raise ValueError
+        variables = row.get("job_variables")
+        if variables is None:
+            continue
+        if not isinstance(variables, dict):
+            raise ValueError
+        env = variables.get("env")
+        if env is None:
+            continue
+        if not isinstance(env, dict) or any(not isinstance(key, str) for key in env):
+            raise ValueError
+        names.update(env)
+    return sorted(names)
+
+try:
+    output = names_only(json.load(sys.stdin))
+except (ValueError, TypeError, RecursionError, OSError):
+    print("Resposta invalida; configuracao nao verificada.", file=sys.stderr)
+    raise SystemExit(1)
+print(json.dumps(output, ensure_ascii=True))
+'
 ```
 
-Imprime **nomes de chaves**, nunca valores. Este endpoint é apenas ilustrativo;
-confirma a API real e evita consultas que possam expor credenciais.
+Prepara `FILTRO_APROVADO.json` com o conjunto mínimo autorizado antes da consulta;
+não é um ficheiro fornecido por esta Skill. O exemplo imprime apenas nomes de
+chaves como JSON escapado, sem nomes de deployments nem valores. Valida toda a
+resposta antes de imprimir: lista de objetos, `job_variables` e `env` como objetos
+ou null/ausentes; valores de `env` não são interpretados nem emitidos. Um tipo
+inesperado falha com mensagem fixa, sem traceback ou conteúdo recebido. A resposta pode
+conter valores em memória mesmo que a saída os omita: não a guardes nem atives
+tracing/logs do corpo. Se a API permitir projeção de campos, pede apenas os
+necessários. Não imprimas corpo de erro nem stderr arbitrário para diagnosticar
+falhas; código não-zero ou resposta inválida significam verificação inconclusiva.
+Não uses a consulta se a semântica de leitura, o filtro ou o acesso não estiverem
+confirmados. [Prefect Read Deployments](https://docs.prefect.io/v3/api-ref/rest-api/server/deployments/read-deployments),
+consultado em 2026-10-20; confirmar o schema da versão instalada.
 
 **4. Confirma a hipótese com uma verificação de leitura autorizada.** Se a
 identidade e os caminhos forem conhecidos e relevantes, verifica as permissões

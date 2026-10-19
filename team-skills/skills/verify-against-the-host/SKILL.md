@@ -5,9 +5,9 @@ description: Rever uma alteração destinada a modificar um host de produção �
 
 # Verificar contra o host, não contra o repositório
 
-A maior parte dos erros que chegam a produção não vêm de desenho fraco. Vêm de
-o autor ter escrito a partir do repositório enquanto a máquina tinha outra
-coisa instalada.
+Uma revisão baseada apenas no repositório pode não detetar divergências do
+host instalado. Usa esse risco como hipótese a verificar, não como explicação
+automática para uma falha em produção.
 
 ## Regra
 
@@ -42,7 +42,9 @@ sha256sum "$INSTALLED_UNIT_FILE" || exit 1
 
 `REVIEWED_SHA`, ficheiro e caminho instalado são valores confirmados para esta
 revisão e host. Uma falha em qualquer comando torna a comparação inconclusiva;
-nunca a trates como igualdade.
+nunca a trates como igualdade. Compara os dois digests: imprimi-los não prova
+que sejam iguais. Executa o bloco como script ou numa subshell apropriada,
+porque `exit` termina a shell e `pipefail` pode afetar comandos posteriores.
 
 **Ambiente de um processo Linux**, apenas com autorização e PID confirmado:
 usa a sonda de nomes em [references/probes.md](references/probes.md), que lê
