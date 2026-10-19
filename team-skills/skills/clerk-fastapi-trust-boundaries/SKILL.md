@@ -5,7 +5,7 @@ description: Use when designing or reviewing user authentication across Clerk, N
 
 # Identity at the API trust boundary
 
-**Scope:** authentication and admission of frontend-originated requests to a Python/FastAPI backend, especially with Clerk, Vercel and Cloudflare. This is architecture guidance, **not evidence that a target deployment already implements it**. For Clerk keys or sign-in broken on a specific Vercel deployment, use the separate `clerk-vercel-auth-environments` Skill.
+**Scope:** authentication and admission of frontend-originated requests to a Python/FastAPI backend, especially with Clerk, Vercel and Cloudflare. This is architecture guidance, **not evidence that a target deployment already implements it**. Installing keys or repairing a sign-in form on one deployment is outside this architectural scope: that diagnosis needs the affected deployment's effective environment, configured authentication routes, and browser evidence. These architecture checks alone do not establish why a particular form failed.
 
 ## Non-interchangeable proofs
 

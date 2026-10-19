@@ -29,9 +29,13 @@ nor permission for a particular operation.
 
 - **Tool absent:** the MCP server does not expose this operation; use an authorized
   documented path or report the capability gap.
-- **Network/DNS/TLS failure:** the request has not reached the provider. A sandbox
-  failure cannot establish that the key or API is invalid. Retry with approved
-  network access only when the task authorizes that path.
+- **Network/DNS/TLS failure:** distinguish a confirmed failure before dispatch from
+  a timeout or disconnect after a request may have been sent. A sandbox failure
+  does not establish that the key or API is invalid. If a write may have reached
+  the target, its outcome is **unknown**: reconcile the exact resource or use the
+  operation's documented idempotency mechanism before retrying. Without either,
+  stop and report the uncertainty. Retry through a different network path only
+  within the task's existing authorization; a transport change does not widen it.
 - **HTTP 401/403:** check credential, instance, scope, and provider permissions;
   do not automatically rotate or broaden access.
 - **HTTP success with wrong data:** confirm instance/environment and resource IDs.

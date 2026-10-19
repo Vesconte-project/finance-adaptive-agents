@@ -1,0 +1,582 @@
+{
+  "report_format_version": 1,
+  "reviewed_at": "2026-10-19",
+  "reviewed_git_revision": "11626fd",
+  "scope": {
+    "canonical_skills": 38,
+    "markdown_references": 34,
+    "method": "Leitura editorial das skills e referências, comparação de âmbito, decisões, evidência declarada e instruções duplicadas.",
+    "independent_agents_used": false,
+    "catalog_modified": false,
+    "technical_procedures_executed": false,
+    "upstream_sources_reverified": false,
+    "external_repositories_or_hosts_inspected": false,
+    "limitations": "Os relatos de incidentes, fontes e datas foram lidos como afirmações dos pacotes, não confirmados independentemente. Esta revisão não certifica procedimentos, segurança, desempenho ou estado instalado."
+  },
+  "interpretation": {
+    "purpose": "Preparar manutenção e exercícios independentes; as recomendações ainda não foram aplicadas.",
+    "classification_boundary": "As categorias deste relatório são editoriais. Não constituem metadados do catálogo, regras de seleção, ontologia de capacidades ou nova lógica determinística de relevância.",
+    "preserve": "Preservar identidade, proveniência, seleção semântica pelo modelo e controlos nativos. Uma reorganização futura deve respeitar consumidores existentes e revogação explícita.",
+    "evidence_boundary": "Manter significa preservar o núcleo editorial; não significa tecnicamente validada. Específico de uma tecnologia não significa impróprio para partilha.",
+    "desired_shape": "Decisão melhorada, aprendizagem e limites no núcleo; mecanismos e versões em referências quando apropriado; políticas e factos de produto identificados pelo seu verdadeiro âmbito. Não criar automaticamente uma skill genérica por cada princípio.",
+    "package_autonomy": "Cada pacote selecionado e obtido pelos comandos deve permitir cumprir o seu âmbito com o próprio SKILL.md e referências incluídas. Remissões para outras skills só podem ser opcionais e informativas; não são pré-requisitos nem mecanismos de instalação de dependências."
+  },
+  "findings": [
+    {
+      "id": "F01",
+      "priority": "alta",
+      "finding": "Políticas de produto e planos de implementação têm âmbito de descoberta mais amplo do que o seu conteúdo.",
+      "evidence": [
+        "team-skills/skills/research-dispatch-transport-boundary/SKILL.md:3",
+        "team-skills/skills/research-dispatch-transport-boundary/SKILL.md:8",
+        "team-skills/skills/research-job-quota-ledger/SKILL.md:8",
+        "team-skills/skills/organization-resource-authorization/SKILL.md:16",
+        "team-skills/skills/private-research-artifact-access/SKILL.md:21",
+        "team-skills/team-skills.json:9"
+      ],
+      "analysis": "Só finance-production-release-channel tem âmbito organization-only no descritor. Há outras skills com decisões explícitas para Vesconte/research, papéis, dois modelos, condições de consumo de quota e retenção de 90 dias. Marcar uma regra como proposta evita alegar instalação, mas não a torna uma política partilhável para outro produto. O selector recebe id/name/description, não estas ressalvas do corpo.",
+      "recommendation": "Extrair contratos reutilizáveis; conservar decisões particulares em documentação do produto ou em conhecimento com âmbito apropriado. O âmbito de organização, quando necessário, usa o mecanismo nativo existente; não substitui a identificação do produto dentro dessa organização."
+    },
+    {
+      "id": "F02",
+      "priority": "alta",
+      "finding": "As duas skills de Prefect duplicam procedimentos e têm critérios diferentes para a frescura de um heartbeat.",
+      "evidence": [
+        "team-skills/skills/orchestrator-runtime-ops/SKILL.md:61",
+        "team-skills/skills/prefect-self-hosted-operations/references/releasing-without-interrupting-runs.md:5",
+        "team-skills/skills/immutable-deploys-single-host/SKILL.md:102"
+      ],
+      "analysis": "Há orientação para exigir heartbeat posterior ao início da ativação. A referência Prefect explica que o processo antigo pode emitir heartbeat nesse intervalo e exige evidência posterior ao arranque do novo processo. A diferença já existe dentro do catálogo, independentemente de validar a API real.",
+      "recommendation": "Definir uma fonte editorial mantida para este procedimento. Avaliar consolidação das duas skills Prefect com referências por operação; preservar os restantes princípios de readiness nos seus contextos sem copiar o procedimento."
+    },
+    {
+      "id": "F03",
+      "priority": "alta",
+      "finding": "Referências técnicas recuperam afirmações absolutas que outras entradas tratam como condicionais.",
+      "evidence": [
+        "team-skills/skills/privilege-boundaries-ci-runner/SKILL.md:15",
+        "team-skills/skills/systemd-root-units-and-sandbox-pitfalls/references/root-inputs-and-privilege.md:73",
+        "team-skills/skills/verify-against-the-host/references/probes.md:51"
+      ],
+      "analysis": "A skill de fronteiras pede confirmação das capacidades efetivas de docker/lxd; a referência de systemd afirma equivalência a root sem a mesma condição. Referências são conteúdo operativo e precisam do mesmo rigor que SKILL.md.",
+      "recommendation": "Uniformizar premissas e limites entre entrada e referências. Na fase técnica, verificar os comportamentos nas configurações efetivamente suportadas, sem assumir que o nome do grupo prova a capacidade."
+    },
+    {
+      "id": "F04",
+      "priority": "alta",
+      "finding": "A orientação sobre CI mistura aprendizagem de desempenho com escolhas de workflow e exceções de governação.",
+      "evidence": [
+        "team-skills/skills/ci-cost-and-duration-under-agent-load/SKILL.md:16",
+        "team-skills/skills/ci-cost-and-duration-under-agent-load/SKILL.md:71"
+      ],
+      "analysis": "Medir fases e eliminar trabalho repetido é transferível. Desligar CI em drafts e fazer merge sem CI são decisões de workflow e governação que não decorrem automaticamente dessa aprendizagem.",
+      "recommendation": "Apresentar estratégias de redução de execuções como opções com condições. Qualquer exceção a CI exige política e autorização já existentes no repositório; a skill não cria essa exceção."
+    },
+    {
+      "id": "F05",
+      "priority": "media",
+      "finding": "Dify e Jira têm boa disciplina de operação, mas pouco conhecimento técnico comprovável no próprio pacote.",
+      "evidence": [
+        "team-skills/skills/dify-workflow-operations/references/build-and-dsl.md:3",
+        "team-skills/skills/dify-workflow-operations/references/trace-repair.md:3",
+        "team-skills/skills/jira-data-center-operations/references/issue-create-update.md:3",
+        "team-skills/skills/jira-data-center-operations/references/workflow-transitions.md:3"
+      ],
+      "analysis": "Há métodos úteis, como localizar a primeira divergência, reconciliar uma escrita ambígua e descobrir transições reais. Muitas instruções terminam em verificar a documentação ou o workspace. O pacote não identifica versões, exemplos sanitizados ou evidência suficiente para confirmar vários detalhes específicos.",
+      "recommendation": "Preservar os métodos úteis e acrescentar poucos casos concretos com versão, evidência e limites. Rever a fragmentação das referências sem transformar as entradas em manuais de produto nem num catch-all de automação."
+    },
+    {
+      "id": "F06",
+      "priority": "media",
+      "finding": "O catálogo mistura observação, desenho proposto e prática validada sem um registo uniforme do suporte de cada conclusão.",
+      "evidence": [
+        "team-skills/skills/credential-source-cutovers/SKILL.md:15",
+        "team-skills/skills/research-dispatch-transport-boundary/references/evidence.md:3",
+        "team-skills/skills/postgres-logical-restore-proofs/SKILL.md:14",
+        "team-skills/skills/diagnose-host-failures/references/catalog.md:3"
+      ],
+      "analysis": "Algumas entradas declaram datas e versões com clareza; outras admitem que a proveniência não está estabelecida. Uma data ou um estado active não confirma a conclusão. O detalhe dos relatos não substitui um exercício independente.",
+      "recommendation": "Registar no texto ou em referências a conclusão suportada, origem verificável/sanitizada, âmbito observado, incerteza e condição de revisão. Não adicionar campos aos sidecars nem novos estados de lifecycle apenas para representar qualidade editorial."
+    },
+    {
+      "id": "F07",
+      "priority": "media",
+      "finding": "Alguns gatilhos e exclusões não correspondem bem à aprendizagem apresentada.",
+      "evidence": [
+        "team-skills/skills/greenfield-host-setup/SKILL.md:16",
+        "team-skills/skills/orchestrator-runtime-ops/SKILL.md:3",
+        "team-skills/skills/enforceable-invariants-for-agent-code/SKILL.md:69"
+      ],
+      "analysis": "Greenfield exige simultaneamente dois riscos, embora vários controlos respondam a apenas um deles. Orchestrator-runtime-ops tem nome geral mas âmbito exclusivamente Prefect. A orientação de invariantes tem valor para vários autores, mas algumas formulações vinculam demasiado o problema à presença de agentes.",
+      "recommendation": "Alinhar descrição, nome e exclusões com a decisão realmente melhorada. Testar seleção e não seleção antes de renomear, alargar ou consolidar."
+    },
+    {
+      "id": "F08",
+      "priority": "alta",
+      "finding": "A skill de projeções públicas contém uma aprendizagem transferível e regras de exposição específicas de um atlas.",
+      "evidence": [
+        "team-skills/skills/public-projections-of-confidential-data/SKILL.md:13",
+        "team-skills/skills/public-projections-of-confidential-data/SKILL.md:28",
+        "team-skills/skills/public-projections-of-confidential-data/SKILL.md:54",
+        "team-skills/skills/public-projections-of-confidential-data/SKILL.md:73"
+      ],
+      "analysis": "A união de respostas pode revelar informação que cada resposta parece proteger. Esse método é reutilizável. Contagens entre grupos, coordenadas esquemáticas, líderes, tickers e escalões são escolhas do caso. A alegação de reconstrução superior a 60% não vem acompanhada do artefacto, métrica ou protocolo que permita reproduzi-la neste repositório.",
+      "recommendation": "Manter o método de ameaça, composição e controlo positivo; apresentar o atlas como caso com política própria e documentar o experimento. Não prometer ausência de extração com base apenas numa lista de campos proibidos."
+    },
+    {
+      "id": "F09",
+      "priority": "media",
+      "finding": "O inventário esperado pelo teste de higiene não inclui uma skill presente na revisão analisada.",
+      "evidence": [
+        "tests/test_release_hygiene.py:41",
+        "team-skills/skills/research-dispatch-transport-boundary/SKILL.md:1"
+      ],
+      "analysis": "Comparação estática: 38 diretórios canónicos com SKILL.md e 37 IDs na lista esperada; falta research-dispatch-transport-boundary. Não foi executada a suite de testes nesta revisão.",
+      "recommendation": "Corrigir a expectativa preservando os controlos de integridade e executar validação do catálogo e regressões na fase de manutenção."
+    },
+    {
+      "id": "F10",
+      "priority": "alta",
+      "finding": "Um pacote distribuído autonomamente não pode depender de outra skill ausente.",
+      "evidence": [
+        "team-skills/skills/clerk-fastapi-trust-boundaries/SKILL.md:8",
+        "team-skills/skills/credential-source-cutovers/SKILL.md:98",
+        "team-skills/skills/research-dispatch-transport-boundary/SKILL.md:8",
+        "team-skills/skills/research-job-quota-ledger/SKILL.md:23"
+      ],
+      "analysis": "A seleção e a materialização são feitas pelos comandos. O consumidor não recebe necessariamente as skills citadas pelo pacote. Uma remissão que completa uma instrução ou decide uma etapa necessária deixa o procedimento incompleto.",
+      "recommendation": "Cada pacote selecionado e obtido pelos comandos deve permitir cumprir o seu âmbito com o próprio SKILL.md e referências incluídas. Remissões para outras skills só podem ser opcionais e informativas; não são pré-requisitos nem mecanismos de instalação de dependências. Não copiar skills inteiras nem criar um resolvedor automático de dependências; definir responsabilidades claras e incluir apenas o conhecimento necessário."
+    }
+  ],
+  "skills": [
+    {
+      "id": "agent-operating-agreement",
+      "decision": "rever_governanca",
+      "transferable_knowledge": "Coordenar trabalho autorizado por risco e rollback; reportar evidência e limitações.",
+      "context_to_preserve": "Adoção explícita de um acordo para agentes num host de produção.",
+      "recommendation": "Preservar como acordo opcional ou template adotado pelo repositório. Reduzir duplicação de verificação, lotes e privilégios; não promover preferências a conhecimento técnico universal.",
+      "evidence_status": "Acordo normativo; o pacote não estabelece evidência empírica própria.",
+      "independent_exercise": "Comparar um pedido explícito de acordo de operação em produção com uma correção local; só o primeiro deve ativar o acordo."
+    },
+    {
+      "id": "canonical-team-skill-authoring",
+      "decision": "manter",
+      "transferable_knowledge": "Selecionar uma decisão recorrente, preservar evidência e evoluir conhecimento sem quebrar identidade e lifecycle.",
+      "context_to_preserve": "Regras concretas de formato e publicação deste catálogo.",
+      "recommendation": "Manter o núcleo e separar visualmente os princípios de autoria do contrato específico deste banco. Usar o próprio catálogo para exercitar as regras que enuncia.",
+      "evidence_status": "Contrato editorial com correspondência a validar no código e nos testes.",
+      "independent_exercise": "Propor uma melhoria reutilizável e contrastá-la com um prompt privado sem aprendizagem durável."
+    },
+    {
+      "id": "ci-cost-and-duration-under-agent-load",
+      "decision": "separar_contexto",
+      "transferable_knowledge": "Medir fases e variabilidade antes de otimizar; eliminar trabalho repetido sem perder cobertura.",
+      "context_to_preserve": "GitHub Actions, política de drafts, custos e episódio de quota esgotada.",
+      "recommendation": "Separar método de medição, opções do fornecedor e decisões de governação; condicionar exceções de CI à política existente.",
+      "evidence_status": "Medições e incidente relatados, sem relatórios de execução reproduzidos nesta revisão.",
+      "finding_ids": [
+        "F04"
+      ],
+      "independent_exercise": "Otimizar uma prova pesada com tempos fornecidos; a recomendação não pode autorizar merge sem CI nem eliminar uma prova crítica."
+    },
+    {
+      "id": "clerk-fastapi-trust-boundaries",
+      "decision": "separar_contexto",
+      "transferable_knowledge": "Distinguir identidade do utilizador, identidade do serviço, proteção da origem e autorização do recurso.",
+      "context_to_preserve": "Clerk, FastAPI, Cloudflare, Vercel, BFF e tipos de token.",
+      "recommendation": "Destacar as quatro provas no núcleo e levar mecanismos da stack para uma referência. Manter o contexto técnico no gatilho enquanto não houver evidência de um âmbito maior. Resolver a dependência operativa de outras skills: limites e critérios necessários ficam no pacote; uma remissão opcional não substitui uma etapa necessária.",
+      "evidence_status": "Desenho declarado e fontes datadas; implementação e aceitação de tokens não verificadas.",
+      "independent_exercise": "Um serviço autenticado encaminha um user_id forjado: o revisor deve exigir prova do utilizador e autorização do recurso, sem prescrever uma stack diferente.",
+      "finding_ids": [
+        "F10"
+      ]
+    },
+    {
+      "id": "clerk-vercel-auth-environments",
+      "decision": "manter",
+      "transferable_knowledge": "Verificar a configuração recebida pelo deployment afetado e distinguir build pronto de autenticação funcional.",
+      "context_to_preserve": "Instâncias Clerk, ambientes e variáveis Vercel, domínio e comportamento do browser.",
+      "recommendation": "Manter como conhecimento técnico específico com fontes e condições de revisão. Evitar duplicar o método geral de configuração efetiva.",
+      "evidence_status": "Fontes e data registadas; documentação e browser não revalidados nesta revisão.",
+      "independent_exercise": "Diagnosticar formulário ausente num Preview protegido; separar proteção Vercel, chave efetiva e formulário Clerk."
+    },
+    {
+      "id": "cloudflare-r2-backups-and-bucket-lock",
+      "decision": "manter",
+      "transferable_knowledge": "Confirmar a operação real do cliente e as garantias reais de retenção, sem assumir equivalência por compatibilidade de API.",
+      "context_to_preserve": "R2, versões rclone/restic, Bucket Lock e tokens com âmbito de bucket.",
+      "recommendation": "Preservar os casos específicos e a sua evidência limitada; tornar a decisão comum explícita e manter cada procedimento na referência pertinente. Não generalizar flags para todo armazenamento S3.",
+      "evidence_status": "Observações com datas e versões, incluindo uma reprodução local que não confirmou a falha; requer probes independentes.",
+      "independent_exercise": "Distinguir 403 por tentativa de criar bucket, falha de índice na sessão restic e uma tarefa AWS S3 Object Lock fora de âmbito."
+    },
+    {
+      "id": "codex-mcp-project-scope",
+      "decision": "separar_contexto",
+      "transferable_knowledge": "Configuração por projeto e ambiente herdado por um daemon são fronteiras diferentes; mudar a shell não prova alteração do serviço.",
+      "context_to_preserve": "Camadas Codex, Linux/WSL e comando observado na CLI 0.157.1.",
+      "recommendation": "Separar diagnóstico de âmbito e herança de ambiente das receitas de wrapper/restart. Verificar versão e fonte oficial antes de fortalecer o procedimento.",
+      "evidence_status": "Uma versão e um resultado observados; sem referência oficial no pacote.",
+      "independent_exercise": "Comparar shell com variável presente e daemon iniciado antes dela; não reiniciar sessões ativas nem alterar configuração global por inferência."
+    },
+    {
+      "id": "credential-source-cutovers",
+      "decision": "manter",
+      "transferable_knowledge": "Cópia fiel, uso efetivo, autenticação e revogação exigem quatro provas distintas.",
+      "context_to_preserve": "Incidentes PostgreSQL/PgBouncer que motivaram o método, sem os impor a outros serviços.",
+      "recommendation": "Usar como exemplo de boa extração de conhecimento. Reforçar rastreabilidade sanitizada e exercitar o princípio noutro consumidor de credenciais. Resolver a dependência operativa de outras skills: limites e critérios necessários ficam no pacote; uma remissão opcional não substitui uma etapa necessária.",
+      "evidence_status": "Incidentes e versões delimitados; sem reprodução independente nesta revisão.",
+      "independent_exercise": "Migrar a fonte de uma credencial de um serviço sintético: igualdade dos ficheiros não pode concluir autenticação ou revogação.",
+      "finding_ids": [
+        "F10"
+      ]
+    },
+    {
+      "id": "deploy-outcome-visibility",
+      "decision": "refinar",
+      "transferable_knowledge": "Aceitação, adiamento, conclusão e falha precisam de tradução em cada fronteira e de um destinatário observável.",
+      "context_to_preserve": "Exemplos systemd, códigos de saída e canais de alertas.",
+      "recommendation": "Concentrar o núcleo no contrato de estados e comunicação. Mover exemplos longos para referência e evitar manter semântica de systemd e Healthchecks em várias skills.",
+      "evidence_status": "Casos operacionais narrados; falta identificação uniforme da evidência.",
+      "independent_exercise": "Um pedido aceite é concluído depois do fim da CI: exigir comunicação da conclusão e não inferir produção de um exit zero."
+    },
+    {
+      "id": "diagnose-host-failures",
+      "decision": "refinar",
+      "transferable_knowledge": "Converter sintomas em hipóteses condicionais com sonda discriminante e critério de confirmação.",
+      "context_to_preserve": "Catálogo de incidentes Linux, systemd, Python e Prefect.",
+      "recommendation": "Manter um índice autónomo com hipóteses, sondas discriminantes e critérios mínimos nas referências incluídas. Remissões para outros pacotes podem ser informativas, mas não necessárias para concluir o diagnóstico no âmbito declarado. Reduzir duplicação desfasada preservando a autonomia e acrescentar proveniência por caso.",
+      "evidence_status": "A referência declara explicitamente que não estabelece a proveniência dos casos.",
+      "finding_ids": [
+        "F02",
+        "F06"
+      ],
+      "independent_exercise": "Um dashboard dá 404 com serviço ativo: tratar escrita na release como hipótese, sem a declarar causa antes de obter evidência."
+    },
+    {
+      "id": "dify-workflow-operations",
+      "decision": "refinar",
+      "transferable_knowledge": "Separar importação de validação funcional; localizar a primeira divergência e reconciliar efeitos com resultado desconhecido.",
+      "context_to_preserve": "DSL, seletores, nós e dependências de workspace Dify.",
+      "recommendation": "Preservar o contexto Dify e acrescentar casos sanitizados que mostrem o ganho face à documentação. Rever oito referências curtas sem criar um manual universal de automação.",
+      "evidence_status": "Métodos e cautelas descritos; não há export ou trace reproduzível no pacote.",
+      "finding_ids": [
+        "F05"
+      ],
+      "independent_exercise": "Usar um export controlado com seletor quebrado e um timeout de escrita; corrigir a primeira divergência sem repetir o efeito externo."
+    },
+    {
+      "id": "effective-config-tracing",
+      "decision": "refinar",
+      "transferable_knowledge": "Configuração declarada, instalada, carregada e efetivamente consumida são estados diferentes.",
+      "context_to_preserve": "Sondas Linux/systemd, variáveis Prefect, timers e caso logind.",
+      "recommendation": "Organizar por método de rastreio e referências por mecanismo. Manter diferenças de precedência e ciclo de vida explícitas; não generalizar uma ordem universal.",
+      "evidence_status": "Evidência desigual: caso logind delimitado e com fontes, outras armadilhas sem rastreabilidade equivalente.",
+      "independent_exercise": "Ficheiro correto com daemon antigo e programa que lê o ficheiro em cada execução; só o primeiro exige investigação de carregamento."
+    },
+    {
+      "id": "enforceable-invariants-for-agent-code",
+      "decision": "refinar",
+      "transferable_knowledge": "Regras transversais exigem inventário da superfície real, testes de propriedades e exceções revistas.",
+      "context_to_preserve": "Caso de rate limiting antes da autenticação e colaboração com agentes.",
+      "recommendation": "Manter a aprendizagem e tornar o incidente exemplo. Qualificar formulações absolutas sobre garantias de testes e sobre camadas externas; não restringir artificialmente o método a agentes.",
+      "evidence_status": "Um caso narrado sem teste ou revisão original associados no pacote.",
+      "finding_ids": [
+        "F07"
+      ],
+      "independent_exercise": "Adicionar uma rota nova que contorna a proteção: um teste obtido do registo runtime deve detetá-la e um teste só de chamadas internas não deve bastar."
+    },
+    {
+      "id": "finance-production-release-channel",
+      "decision": "manter",
+      "transferable_knowledge": "Há aprendizagem útil sobre aceitação versus ativação e dependências entre repositórios, já relacionada com skills gerais.",
+      "context_to_preserve": "Factos, governação, componentes e procedimentos exclusivos do Finance Vesconte.",
+      "recommendation": "Manter como conhecimento explicitamente contextualizado e com âmbito nativo de organização. Separar estado temporário, como schedules em pausa, das regras duráveis e apontar para a fonte atual.",
+      "evidence_status": "Documentos externos nomeados e factos datados; não consultados nesta revisão.",
+      "independent_exercise": "Comparar deploy Finance Vesconte e repositório homónimo externo; o segundo não pode receber os factos ou a política privada."
+    },
+    {
+      "id": "greenfield-host-setup",
+      "decision": "refinar",
+      "transferable_knowledge": "Definir fronteiras de identidade, estado, deploy e recuperação antes de acumular dependências.",
+      "context_to_preserve": "Planeamento de host único com dados e automação que alcança produção.",
+      "recommendation": "Rever o gatilho que exige simultaneamente dois riscos e a duplicação de outras skills. Preservar apenas decisões de ordem de preparação que acrescentem valor; não ampliar automaticamente para toda instalação.",
+      "evidence_status": "Checklist arquitetural, sem caso ou comparação de resultados identificados.",
+      "finding_ids": [
+        "F07"
+      ],
+      "independent_exercise": "Comparar host com ambos os riscos, apenas dados ameaçados e apenas runner com acesso a produção; avaliar qual orientação cada caso realmente precisa."
+    },
+    {
+      "id": "guards-that-pass-blindly",
+      "decision": "refinar",
+      "transferable_knowledge": "Não observar, concluir ausência e decidir a consequência operacional são três coisas distintas; provar que o guarda consegue recusar.",
+      "context_to_preserve": "Scanners de segredos, objetos Git, systemd e locks entre operações.",
+      "recommendation": "Preservar o núcleo forte e mover receitas específicas para referências. Unificar orientações sobre units transitórias e delimitar exceções de disponibilidade por operação.",
+      "evidence_status": "Casos delimitados em referências; outros exemplos sem suporte rastreável uniforme.",
+      "finding_ids": [
+        "F03",
+        "F06"
+      ],
+      "independent_exercise": "Um scanner não lê um input obrigatório e um backup perde uma consulta auxiliar: distinguir resultado inconclusivo da política autorizada para cada operação."
+    },
+    {
+      "id": "healthchecks-io-job-alerting",
+      "decision": "manter",
+      "transferable_knowledge": "Silêncio esperado e ausência de heartbeat são sinais diferentes; receção, aceitação e notificação também.",
+      "context_to_preserve": "Semânticas Healthchecks de pings, transições, período/grace e corpo de resposta.",
+      "recommendation": "Manter a especialização e ligar ao contrato de estados de deploy sem o repetir. Confirmar a opção de alarme explícito com o fornecedor antes de a elevar a padrão.",
+      "evidence_status": "Um account e cinco checks declarados, sem documentação ou probes incluídos.",
+      "independent_exercise": "Configurar num serviço simulado um job periódico e um canal só de eventos; não confundir silêncio normal com job que deixou de correr."
+    },
+    {
+      "id": "host-mutation-batches",
+      "decision": "refinar",
+      "transferable_knowledge": "Agrupar por risco e recuperação, fixar fonte e alvo, distinguir baseline/alvo/drift e atribuir ações por tentativa.",
+      "context_to_preserve": "Scripts ou blocos executados pelo operador; Linux, root e systemd são implementações condicionais.",
+      "recommendation": "Manter a aprendizagem e alinhar referências com o núcleo condicional. Algumas referências voltam a impor root, nomes de estados, traps e bloqueio de merges como se fossem contrato universal.",
+      "evidence_status": "Referências recentes têm relatos datados; o contrato geral é uma proposta de desenho.",
+      "independent_exercise": "Um alvo já instalado e uma tentativa parcialmente destrutiva: distinguir no-op, drift e atribuição das eliminações sem ampliar o âmbito."
+    },
+    {
+      "id": "immutable-deploys-single-host",
+      "decision": "refinar",
+      "transferable_knowledge": "Identidade da release, integridade, código realmente executado e recuperação são propriedades verificáveis distintas.",
+      "context_to_preserve": "Deploys de host Linux, symlinks, venv e Git dentro da release.",
+      "recommendation": "Preservar a especialização; manter exemplos de build no contexto certo e alinhar a frescura de readiness com a identificação do processo novo.",
+      "evidence_status": "Desenho e caso de selo Git delimitado; builds e recuperação não reproduzidos.",
+      "finding_ids": [
+        "F02"
+      ],
+      "independent_exercise": "Uma release com SHA correto executa código clonado de outro commit; o selo e o symlink não podem bastar para declarar a ativação verificada."
+    },
+    {
+      "id": "jira-data-center-operations",
+      "decision": "refinar",
+      "transferable_knowledge": "Uma transição é uma operação com pré-condições próprias; escritas ambíguas exigem reconciliação por recurso.",
+      "context_to_preserve": "Jira Data Center, workflows, campos, edição e configuração do projeto.",
+      "recommendation": "Manter o âmbito de issues/workflows; identificar versões e casos reais que sustentem diferenças relevantes, sem importar procedimentos de administração do servidor.",
+      "evidence_status": "Um padrão local de criação é mencionado sem versão, fixture ou fonte rastreável.",
+      "finding_ids": [
+        "F05"
+      ],
+      "independent_exercise": "Um timeout após criar issue não pode causar criação duplicada; pedido de upgrade do servidor deve ficar fora de âmbito."
+    },
+    {
+      "id": "lets-encrypt-dns01-octodns-renewal",
+      "decision": "separar_contexto",
+      "transferable_knowledge": "Uma automação temporária de DNS deve provar o delta permitido; emissão, instalação e recarregamento do certificado são etapas distintas.",
+      "context_to_preserve": "Integração getssl/OctoDNS mantida pela equipa e contrato exato dos hooks.",
+      "recommendation": "Identificar a origem/versionamento desse contrato e separar a aprendizagem do gate de exatamente uma ação TXT. Não apresentar esse gate como propriedade geral de DNS-01 ou OctoDNS.",
+      "evidence_status": "A implementação mantida é citada sem revisão ou localização verificável no pacote.",
+      "independent_exercise": "Um plano DNS inclui alteração alheia ao challenge; deve recusar. Um certificado com múltiplos challenges exige confirmar o contrato, sem assumir uma única ação."
+    },
+    {
+      "id": "mcp-api-capability-triage",
+      "decision": "manter",
+      "transferable_knowledge": "Conectividade, operação exposta, autenticação e autorização são provas diferentes; mudar transporte não amplia autoridade.",
+      "context_to_preserve": "Exemplo Clerk datado, sem o tornar afirmação permanente sobre o fornecedor.",
+      "recommendation": "Preservar o método e afinar a taxonomia de falhas para não concluir percurso ou ausência de efeito sem evidência suficiente.",
+      "evidence_status": "Um exemplo observado e princípios diagnósticos; sem trace sanitizado associado.",
+      "independent_exercise": "MCP ligado só com pesquisa de documentação e pedido de dados de conta; identificar a capacidade em falta sem inventar endpoints nem aumentar permissões."
+    },
+    {
+      "id": "openssh-socket-activation-listeners",
+      "decision": "manter",
+      "transferable_knowledge": "A configuração de uma aplicação pode não governar o recurso entregue por outro componente; verificar o listener real e a precedência efetiva.",
+      "context_to_preserve": "OpenSSH com socket activation Ubuntu e regras de Include/Match.",
+      "recommendation": "Manter o conhecimento específico. Acrescentar versões e prova reproduzível; conservar a hipótese de boot/VPN como não verificada.",
+      "evidence_status": "Um host Ubuntu e mês declarados, sem versões exatas ou reprodução independente.",
+      "independent_exercise": "sshd -T e listener divergem num host simulado com ssh.socket; não corrigir apenas sshd_config nem interromper o único acesso."
+    },
+    {
+      "id": "orchestrator-runtime-ops",
+      "decision": "avaliar_consolidacao",
+      "transferable_knowledge": "A ativação deve confirmar processo novo, código executado e compatibilidade com trabalho em curso.",
+      "context_to_preserve": "O conteúdo é Prefect, apesar do nome genérico.",
+      "recommendation": "Avaliar incorporação dos casos úteis em prefect-self-hosted-operations e referências. Confirmar por exercícios que não se perde um gatilho distinto; qualquer retirada futura segue lifecycle nativo.",
+      "evidence_status": "Exemplos com premissas condicionais, mas sem versão observada uniforme.",
+      "finding_ids": [
+        "F02",
+        "F07"
+      ],
+      "independent_exercise": "Comparar reinício de process worker Prefect com operação de outro motor; medir seleção duplicada e instruções incompatíveis."
+    },
+    {
+      "id": "organization-resource-authorization",
+      "decision": "separar_contexto",
+      "transferable_knowledge": "Membership, ownership, entitlement e administração de plataforma são autoridades diferentes, com consistência e revogação próprias.",
+      "context_to_preserve": "Papéis Clerk, política de cancelamento/histórico e procedimento proposto de grants PostgreSQL para este produto.",
+      "recommendation": "Separar o método de avaliação de autorização das políticas de papel e do bootstrap administrativo. Estas decisões pertencem ao produto e precisam de fonte e âmbito explícitos.",
+      "evidence_status": "Discussão de arquitetura e padrão revisto, expressamente não observado em uso.",
+      "finding_ids": [
+        "F01"
+      ],
+      "independent_exercise": "Outro SaaS usa as mesmas tecnologias mas dá billing a um papel distinto; a skill não pode impor org:admin ou a política de histórico do Finance."
+    },
+    {
+      "id": "postgres-logical-restore-proofs",
+      "decision": "manter",
+      "transferable_knowledge": "Uma prova deve falhar pela causa certa, reproduzir o arranque real e verificar permissões além dos dados.",
+      "context_to_preserve": "Dump lógico, psql, imagem oficial e comportamentos declarados de PostgreSQL 16.13.",
+      "recommendation": "Preservar os casos técnicos e separar os três mecanismos em referências se necessário. Priorizar reprodução independente de bootstrap/grantor, readiness e tratamento do pipe antes de certificar as receitas.",
+      "evidence_status": "Incidente datado e versão exata; sem fixture ou resultado executável neste pacote.",
+      "independent_exercise": "Reproduzir em ambiente descartável readiness temporária, falha SQL com SIGPIPE e roles com grantor; testar também um backup verdadeiramente inválido."
+    },
+    {
+      "id": "prefect-self-hosted-operations",
+      "decision": "avaliar_consolidacao",
+      "transferable_knowledge": "Estado do orquestrador, tentativa de execução, código publicado e produto gerado não são provas equivalentes.",
+      "context_to_preserve": "Prefect 3, process workers, pull steps Git e variantes observadas de servidor/cliente.",
+      "recommendation": "Usar como candidato a entrada mantida da família Prefect, com referências por falha/operação. Rever orientações absolutas de variáveis e rotação face às condições e autorização do restante catálogo.",
+      "evidence_status": "Versões e período delimitados; exemplos operacionais sem reprodução nesta revisão.",
+      "finding_ids": [
+        "F02"
+      ],
+      "independent_exercise": "Heartbeat emitido pelo processo antigo depois de começar a ativação não pode provar o novo worker; COMPLETED sem outputs não pode provar produção de dados."
+    },
+    {
+      "id": "private-research-artifact-access",
+      "decision": "separar_contexto",
+      "transferable_knowledge": "Autorizar a emissão de um bearer URL difere de revogar um URL já emitido; retenção, entitlement e storage têm estados distintos.",
+      "context_to_preserve": "FastAPI, armazenamento S3-compatible, TTL de 60 segundos e retenção proposta de 90 dias.",
+      "recommendation": "Manter o método de autorização e revogação; mover durações, escalões, fixtures e retenção comercial para o contrato do produto. Distinguir exemplo de prazo de requisito real.",
+      "evidence_status": "Política proposta e referências datadas, sem bucket ou lifecycle verificados.",
+      "finding_ids": [
+        "F01"
+      ],
+      "independent_exercise": "Um produto com retenção contratual diferente deve preservar a autorização por recurso sem herdar os 90 dias nem prometer revogação instantânea de URLs emitidos."
+    },
+    {
+      "id": "privilege-boundaries-ci-runner",
+      "decision": "refinar",
+      "transferable_knowledge": "Avaliar alcance efetivo e consumidores de credenciais; separar pedido, validação e execução privilegiada com proveniência e prevenção de replay.",
+      "context_to_preserve": "Runner junto de produção; canal Linux/systemd/polkit como implementação ilustrativa.",
+      "recommendation": "Preservar a fronteira de confiança e mover topologias longas de chaves para referências. Alinhar todas as afirmações de capacidades com as condições já existentes no núcleo.",
+      "evidence_status": "Exemplos e topologias narrados; testes positivos/negativos ainda por executar nesta revisão.",
+      "finding_ids": [
+        "F03"
+      ],
+      "independent_exercise": "Uma chave aparentemente duplicada serve um worker que clona no arranque; não a retirar sem inventário e não inferir capacidade só por membership."
+    },
+    {
+      "id": "production-faithful-integration-proofs",
+      "decision": "manter",
+      "transferable_knowledge": "Uma prova só sustenta conclusões nas dimensões relevantes que reproduz; validar também a topologia do teste.",
+      "context_to_preserve": "Incidente com pooler, namespaces e autenticação como exemplo, não requisito de stack.",
+      "recommendation": "Preservar o núcleo como bom exemplo de extração. Acrescentar fonte sanitizada e critérios para justificar que uma diferença entre ambientes é irrelevante.",
+      "evidence_status": "Caso concreto narrado sem versão ou artefacto de comparação identificado.",
+      "independent_exercise": "Duas provas têm o mesmo resultado mas topologias de autenticação diferentes; justificar qual conclusão se transfere, sem exigir copiar toda a produção."
+    },
+    {
+      "id": "public-projections-of-confidential-data",
+      "decision": "separar_contexto",
+      "transferable_knowledge": "A composição de respostas, ordenação, coordenadas e histórico pode revelar um dataset; testar extração com um controlo positivo.",
+      "context_to_preserve": "Atlas de empresas, clusters, tickers, escalões e orçamento de consultas.",
+      "recommendation": "Destacar método de ameaça e teste de reconstrução; colocar a política do atlas e a experiência de 60% numa referência contextualizada e reproduzível.",
+      "evidence_status": "Experimento relatado com dimensão do caso, sem métrica, protocolo ou artefacto disponível no pacote.",
+      "finding_ids": [
+        "F08"
+      ],
+      "independent_exercise": "Outro dataset confidencial permite publicar algumas relações: aplicar o método de ameaça sem importar a proibição absoluta por par do atlas."
+    },
+    {
+      "id": "research-dispatch-transport-boundary",
+      "decision": "separar_contexto",
+      "transferable_knowledge": "Transporte e autoridade de lease são responsabilidades distintas; entrega, execução, persistência e settlement exigem garantias próprias.",
+      "context_to_preserve": "Recomendação PostgreSQL/HTTPS para Vesconte e plano concreto de remoção de Celery em três repositórios.",
+      "recommendation": "Preservar raciocínio e matriz de falhas; manter recomendação e migração particulares numa fonte de produto ou âmbito contextualizado. Não tornar PostgreSQL pull escolha universal.",
+      "evidence_status": "Melhor rastreabilidade do grupo de produto: commits externos, fontes e limites explícitos; nenhuma implantação ou escala comprovada por esta revisão.",
+      "finding_ids": [
+        "F01",
+        "F09",
+        "F10"
+      ],
+      "independent_exercise": "Uma aplicação já tem um broker necessário a outros eventos; o revisor deve preservar autoridade e recovery sem recomendar a remoção automática do broker."
+    },
+    {
+      "id": "research-job-quota-ledger",
+      "decision": "separar_contexto",
+      "transferable_knowledge": "Admissão, reserva, execução e settlement idempotente precisam de fronteiras atómicas e reconciliação de falhas.",
+      "context_to_preserve": "Produto com dois modelos, uma unidade por comparação, política de reembolso e limites locais.",
+      "recommendation": "Separar o contrato geral de accounting da unidade comercial, condições de sucesso e política de cancelamento. Não impor dois modelos ou reembolso integral a outro produto.",
+      "evidence_status": "Alvo de produto declarado e exercícios propostos; implementação e concorrência não verificadas.",
+      "finding_ids": [
+        "F01",
+        "F10"
+      ],
+      "independent_exercise": "Um serviço cobra parcialmente um job com um modelo: preservar concorrência e idempotência sem substituir a sua política comercial pela do Finance."
+    },
+    {
+      "id": "stateful-service-migrations",
+      "decision": "manter",
+      "transferable_knowledge": "Mover bytes, obter consistência, fazer cutover e recuperar após novas escritas são problemas distintos.",
+      "context_to_preserve": "Estado ameaçado por substituição de checkout ou volume implícito; métodos variam por aplicação/filesystem.",
+      "recommendation": "Manter o âmbito específico e os limites de rollback. Organizar os exemplos de contentores como referência quando a dimensão o justificar.",
+      "evidence_status": "Método e condições detalhados, sem incidente ou prova de migração identificados.",
+      "independent_exercise": "Depois do cutover existem escritas novas: voltar o symlink não pode ser apresentado como rollback consistente dos dados."
+    },
+    {
+      "id": "stripe-entitlement-reconciliation",
+      "decision": "separar_contexto",
+      "transferable_knowledge": "Pagamento, identidade e autorização não são equivalentes; uma projeção comercial precisa de reconciliação e política explícita de obsolescência.",
+      "context_to_preserve": "Stripe e seus eventos, Clerk/FastAPI/PostgreSQL e tempos de degradação acordados num exercício local.",
+      "recommendation": "Manter práticas específicas de Stripe com fontes. Separar stack opcional e política local de 15/60 minutos, sem importar esses valores para outro SaaS.",
+      "evidence_status": "Arquitetura proposta e fontes datadas; webhooks e reconciliação não executados nesta revisão.",
+      "finding_ids": [
+        "F01"
+      ],
+      "independent_exercise": "Eventos duplicados e fora de ordem num SaaS com outra tolerância a stale state: reconciliar sem impor a política de degradação local."
+    },
+    {
+      "id": "systemd-root-units-and-sandbox-pitfalls",
+      "decision": "refinar",
+      "transferable_knowledge": "A cadeia de entradas e diretórios que controla execução privilegiada faz parte da fronteira de confiança; privilégio efetivo precisa de evidência.",
+      "context_to_preserve": "Diretivas e prefixos systemd, permissões POSIX e canais de segredos.",
+      "recommendation": "Manter a especialização; alinhar as referências com as premissas condicionais do catálogo e reproduzir semânticas de privilégio/namespace em versões identificadas.",
+      "evidence_status": "Um host Ubuntu e mês; falta versão systemd e artefacto de reprodução uniforme.",
+      "finding_ids": [
+        "F03"
+      ],
+      "independent_exercise": "Ficheiro root-owned com ancestral gravável e uma unit com prefixo de privilégio; verificar a cadeia real sem inferir confiança da folha ou do euid."
+    },
+    {
+      "id": "systemd-service-exit-and-oom-semantics",
+      "decision": "refinar",
+      "transferable_knowledge": "O resultado de uma aplicação, a classificação do gestor de serviços e o que os chamadores recebem são camadas diferentes.",
+      "context_to_preserve": "OOMPolicy, cgroups, SuccessExitStatus e lifecycle de units transitórias.",
+      "recommendation": "Preservar os casos específicos, mas separar OOM, tradução de resultados e units transitórias em referências. Confirmar defaults por versão/configuração em vez de generalizar um host.",
+      "evidence_status": "Relatos verificados num host, sem versão exata ou fixture incluída.",
+      "independent_exercise": "Comparar execução direta, systemctl e systemd-run num alvo descartável; classificar resultados sem confundir sucesso do gestor com conclusão do trabalho."
+    },
+    {
+      "id": "verify-against-the-host",
+      "decision": "refinar",
+      "transferable_knowledge": "Uma revisão que afeta produção deve confrontar pressupostos com estado instalado e indicar o que ficou por verificar.",
+      "context_to_preserve": "Sondas Linux/systemd, permissões e verificação de artefactos.",
+      "recommendation": "Manter o método e as sondas como exemplos condicionais. Reduzir repetição de correções de outras skills e qualificar afirmações gerais sem suporte; não exigir acesso ao host para ajudar.",
+      "evidence_status": "Método prescritivo e sondas ilustrativas; sem comparação de revisões documentada.",
+      "finding_ids": [
+        "F02",
+        "F03"
+      ],
+      "independent_exercise": "Rever uma mudança com unit instalada divergente e sem acesso ao host; usar evidência fornecida e explicitar limites sem inventar confirmação."
+    }
+  ],
+  "next_phase": {
+    "independence": "Os primeiros pareceres dos agentes devem receber os pacotes e critérios, sem as conclusões deste relatório, para reduzir ancoragem. Comparar os pareceres só depois.",
+    "separate_questions": [
+      "A aprendizagem melhora uma decisão e transfere-se para outro contexto apropriado?",
+      "O gatilho seleciona a skill para uma tarefa pertinente e rejeita uma vizinha?",
+      "Os procedimentos e pressupostos técnicos resistem a documentação primária e reprodução controlada?"
+    ],
+    "priority": [
+      "Autonomia dos pacotes: exercitar cada skill sem nenhuma skill irmã instalada e corrigir dependências operativas.",
+      "Separação de políticas de produto nas skills SaaS/research e de projeções públicas.",
+      "Duplicação Prefect e critérios de readiness.",
+      "Procedimentos PostgreSQL, R2/restic, privilégios systemd e integração DNS.",
+      "Valor técnico e rastreabilidade dos pacotes Dify/Jira."
+    ],
+    "execution_boundary": "Só exercícios descartáveis e sem efeitos externos por defeito; não testar hosts, credenciais, billing, DNS, retenção real ou chamadas pagas sem autorização aplicável.",
+    "maintenance_boundary": "Aplicar mudanças pequenas após comparar resultados, validar os pacotes e correr regressões proporcionais. Não renomear nem remover skills já distribuídas sem o lifecycle existente."
+  }
+}

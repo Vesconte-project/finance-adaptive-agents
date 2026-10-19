@@ -13,8 +13,10 @@ from "installed by consumers" and use the defined lifecycle mechanism for the la
 
 ## Canonical identity and version contract
 
-Treat the catalog's JSON descriptors as a compatibility contract, not free-form metadata. Check
-the repository's parser and documentation before changing their schema. In this catalog:
+Treat a catalog's descriptors as a compatibility contract, not free-form metadata. Inspect the
+target parser and documentation before changing or requiring a schema. The following concrete
+contract belongs to the finance-adaptive-agents catalog; apply it only after confirming that the
+target uses this format. Other catalogs may have different descriptors or lifecycle mechanisms:
 
 - the root `team-skills.json` identifies the source and has its own `schema_version`;
 - every Skill directory contains `team-skills.json` with the catalog-supported
@@ -22,11 +24,11 @@ the repository's parser and documentation before changing their schema. In this 
 - the directory name must match the portable Skill `name`, while its frontmatter contains only
   the fields supported by the canonical parser.
 
-Keep a Skill ID stable across ordinary content and reference changes. Do not add an arbitrary
-per-Skill version field or provider-specific frontmatter when the catalog does not support it:
+Keep the target catalog's stable identity across ordinary content changes. In the format above,
 the canonical Git revision and package digest are the durable provenance of materialized
-content. Change a schema version, descriptor shape, or lifecycle meaning only as a repository
-contract change, with the corresponding compatibility and distribution validation.
+content; do not invent another version field or provider-specific frontmatter. Change a schema,
+descriptor shape, or lifecycle meaning only as an explicit contract change with corresponding
+compatibility and distribution validation, rather than assuming this format for another bank.
 
 Validate proportionally:
 

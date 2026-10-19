@@ -94,6 +94,7 @@ def test_canonical_skill_catalog_is_safe_and_portable():
             "public-projections-of-confidential-data",
             "active",
         ),
+        ("research-dispatch-transport-boundary", "research-dispatch-transport-boundary", "active"),
         ("research-job-quota-ledger", "research-job-quota-ledger", "active"),
         ("stateful-service-migrations", "stateful-service-migrations", "active"),
         ("stripe-entitlement-reconciliation", "stripe-entitlement-reconciliation", "active"),

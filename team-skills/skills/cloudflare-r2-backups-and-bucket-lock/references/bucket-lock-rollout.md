@@ -31,8 +31,11 @@ is stored.
 ## Validation after activation
 
 - Probe overwrite and delete on a disposable object inside each protected prefix; expect 409.
-- The first scheduled backup after activation is the real proof that the rule does not break
-  production: verify its object, size, `LastModified`, and checksum read-back.
+- The first scheduled backup after activation tests compatibility with that production path:
+  verify its object, size and `LastModified`, then compare a trusted digest of the finalized
+  artifact with the actual downloaded object bytes. Reading a checksum sidecar alone does not
+  verify the payload. If authorized payload verification is unavailable, leave integrity
+  unverified; one passing backup does not establish compatibility for every maintenance path.
 
 ## Urgent deletion under retention (erasure requests, leaked secret in a dump)
 

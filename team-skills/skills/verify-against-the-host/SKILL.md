@@ -44,17 +44,13 @@ sha256sum "$INSTALLED_UNIT_FILE" || exit 1
 revisão e host. Uma falha em qualquer comando torna a comparação inconclusiva;
 nunca a trates como igualdade.
 
-**Ambiente de um processo Linux**, apenas com autorização e PID de um serviço
-systemd confirmado:
-
-```bash
-pid=$(systemctl show UNIT -p MainPID --value)
-tr '\0' '\n' < /proc/$pid/environ | cut -d= -f1
-```
-
-O exemplo imprime apenas nomes do ambiente inicial exposto em `/proc`, não
-valores, fontes ou necessariamente a configuração efetivamente consumida pela
-aplicação. Um `.env` no repositório também não prova o que está instalado.
+**Ambiente de um processo Linux**, apenas com autorização e PID confirmado:
+usa a sonda de nomes em [references/probes.md](references/probes.md), que lê
+entradas delimitadas por NUL e apresenta os nomes escapados como JSON. Converter
+NUL em linhas antes de separar nome e valor pode imprimir partes de valores
+multilinha, incluindo segredos. A sonda mostra o ambiente inicial exposto em
+`/proc`, não as fontes nem necessariamente a configuração efetivamente consumida
+pela aplicação. Um `.env` no repositório também não prova o que está instalado.
 
 **Dependências entre units systemd**, quando o host usa systemd e a inspeção
 está autorizada:
@@ -126,7 +122,8 @@ privilegiada, permissões, identidade ou credenciais consumidas por serviços.
 
 As sondas atravessam sítios onde há credenciais. Regras fixas:
 
-- imprime **nomes de chaves**, nunca valores (`cut -d= -f1`);
+- lê cada entrada NUL-delimitada e separa no primeiro `=` antes de apresentar
+  **nomes de chaves** escapados; nunca transforma valores em linhas para os filtrar;
 - mascara DSNs e tokens antes de mostrar qualquer linha;
 - se surgir um valor secreto, não o reproduzas nem o incluas em logs ou
   relatórios. Segue o processo aprovado de resposta a incidentes; rotação ou

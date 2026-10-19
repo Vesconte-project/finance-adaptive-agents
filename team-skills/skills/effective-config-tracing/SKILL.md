@@ -34,16 +34,38 @@ do runtime e documenta o que não pode ser verificado.
 Quando for aplicável, começa pelo processo, não pelo repositório:
 
 ```bash
-pid=$(systemctl show UNIT -p MainPID --value)
-sudo sh -c "tr '\0' '\n' < /proc/$pid/environ" | cut -d= -f1 | sort
+pid=$(systemctl show UNIT -p MainPID --value) || exit 1
+python3 - "$pid" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+pid = sys.argv[1]
+if not pid.isascii() or not pid.isdecimal() or int(pid) <= 0:
+    raise SystemExit("PID inválido; ambiente não verificado.")
+entries = Path(f"/proc/{pid}/environ").read_bytes().split(b"\0")
+names = []
+for entry in entries:
+    if not entry:
+        continue
+    name, separator, _ = entry.partition(b"=")
+    if not separator or not name:
+        raise SystemExit("Entrada inválida; ambiente não verificado.")
+    names.append(name.decode("utf-8", errors="backslashreplace"))
+for name in names:
+    print(json.dumps(name, ensure_ascii=True))
+PY
 ```
 
-Este comando imprime nomes de variáveis presentes no ambiente inicial do
-processo, não valores efetivos nem as respetivas fontes. A aplicação pode
-transformá-los, removê-los ou carregar configuração adicional; não uses esta
-sonda isoladamente para concluir qual é o valor que ela consome. Usa `sudo`
-apenas se estiver autorizado. O redireccionamento dentro de `sh -c` permite
-que a leitura seja feita com os privilégios aprovados.
+Executa a leitura com uma identidade que já tenha acesso aprovado ao PID e com
+Python 3 disponível. Se faltar acesso, reporta a verificação como não realizada;
+não alargues permissões. O comando imprime nomes do ambiente inicial como strings
+JSON escapadas, não valores nem fontes. Separar entradas por NUL antes do primeiro
+`=` evita imprimir partes de valores multilinha. Uma falha de leitura/análise não
+é uma lista vazia válida. A aplicação pode transformar o ambiente ou carregar
+outras fontes; esta sonda isolada não prova o valor que ela consome. Formato e
+limites: [proc_pid_environ(5)](https://man7.org/linux/man-pages/man5/proc_pid_environ.5.html)
+e [environ(7)](https://man7.org/linux/man-pages/man7/environ.7.html), consultados em 2026-10-19.
 
 **2. Inspeciona a unit e as fontes declaradas sem imprimir valores.**
 
@@ -94,7 +116,9 @@ autorização como negação de acesso.
 ## Armadilhas confirmadas
 
 - **O mesmo valor definido em dois sítios**, com precedência implícita. Funciona
-  por acaso até alguém mudar a ordem ou remover o sítio errado. Deixa um só.
+  por acaso até alguém mudar a ordem ou remover o sítio errado. Confirma se é
+  duplicação acidental ou um override intencional. Propõe remover apenas a
+  duplicação desnecessária, após estabelecer a precedência e a autorização.
 - **Um symlink que funciona e um pai que não deixa passar.** Um caminho pode
   apontar para o sítio certo e falhar na mesma: para o atravessar, é preciso
   permissão de execução em **todos** os diretórios acima. Um `0750` a meio do
@@ -109,19 +133,25 @@ autorização como negação de acesso.
 
 ## Calendário declarado num fuso, efeito noutro
 
-Um timer systemd com fuso explícito (`OnCalendar=Sun *-*-* 02:10:00 Europe/London`)
-num host em UTC dispara a horas UTC diferentes consoante a hora de verão: até à
-mudança arrancava à 01:10 UTC; a partir dela, às 02:10 UTC, dentro de uma janela
-proibida de backups (observado a 18/10/2026). Nada no ficheiro mudou.
+Exemplo de risco a verificar: um timer systemd com fuso explícito
+(`OnCalendar=Sun *-*-* 02:10:00 Europe/London`) pode corresponder a 01:10 UTC
+no horário de verão e a 02:10 UTC no horário de inverno, sem mudar o ficheiro.
+Uma janela proibida fixa em UTC pode então passar a coincidir com o arranque.
+O relato original está datado de 18/10/2026; sem os recibos e as ocorrências da
+versão instalada, não prova que a execução após a transição tenha sido observada.
 
-- Quando as janelas proibidas estão em UTC, declara os timers em UTC.
-- Confirma o efeito real com `systemctl --no-pager list-timers` à volta das datas
-  de mudança de hora, não só o texto da unit.
-- Compara a hora de arranque **mais a duração máxima medida** com as janelas
-  proibidas, e limita a duração (`RuntimeMaxSec=`) para não entrar nelas.
-- Se o repositório já declara o valor certo e o host divergiu, a correção é
-  reinstalar a unit do repositório. Só o `.timer`, se o `.service` depender de
-  outras mudanças ainda não instaladas.
+- Confirma primeiro o fuso e a política da janela aprovada. Se esta for fixa em
+  UTC, um timer em UTC pode evitar deslocamentos; se seguir hora civil, a mudança
+  pode ser esperada e não constitui, por si, divergência a corrigir.
+- Confirma próximas ocorrências na versão instalada e nas datas de transição,
+  pela interface suportada; uma listagem feita hoje não prova datas futuras.
+- Compara arranque **mais duração medida e margem aprovada** com as janelas
+  proibidas. Um limite como `RuntimeMaxSec=` só é opção se interromper o trabalho
+  for seguro e a política o permitir; não o imponhas apenas para caber na janela.
+- Se a fonte aprovada já tiver a configuração desejada e o host divergir,
+  prepara a reconciliação autorizada. Confirma dependências antes de instalar
+  apenas um `.timer` ou também o `.service`; o repositório não prova sozinho que
+  a versão proposta pode ser instalada isoladamente.
 
 ## Ficheiro certo, daemon com o valor antigo
 

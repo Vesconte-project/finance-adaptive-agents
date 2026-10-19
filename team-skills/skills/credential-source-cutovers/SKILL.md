@@ -97,7 +97,10 @@ Não contém passwords, verificadores, URLs privadas nem dumps de ambiente.
 
 Uma credencial inicial sem aliases ou consumidores anteriores não precisa de
 um cutover. Configuração sem autenticação pertence ao rastreio de configuração.
-Para dados persistentes, usa `stateful-service-migrations`; para descobrir
-precedência e referências reais, usa `effective-config-tracing`. Não substituas
-os mecanismos de rotação e recuperação mantidos pelo projeto por uma receita
-genérica desta Skill.
+Nesse caso, identifica o consumidor, as fontes aplicáveis, a precedência e o
+valor efetivamente consumido, sem concluir que um ficheiro instalado já foi
+carregado. Mover dados persistentes é outra operação: exige um plano específico
+de consistência, coordenação dos escritores, cutover e recuperação das escritas
+posteriores. As quatro provas desta Skill não completam essa migração. Não
+substituas os mecanismos de rotação e recuperação mantidos pelo projeto por uma
+receita genérica.

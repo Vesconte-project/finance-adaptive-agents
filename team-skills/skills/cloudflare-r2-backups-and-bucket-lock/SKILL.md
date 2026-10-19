@@ -22,6 +22,10 @@ to **create the bucket** — before uploading. A bucket-scoped token cannot crea
 answers `403 AccessDenied`. It looks like a permission problem on the object write and is not:
 the same key succeeds with another client. Current rclone with `provider = Cloudflare` may not do
 this, so **first confirm the wire call** (`-vv --dump headers`) instead of assuming this bug.
+Capture traces only in an authorized private location. Keep raw traces out of shared logs and
+reports; extract only the method, sanitized target and status. Do not enable auth/body dumps.
+Even when Authorization is masked, other headers, URLs and object names may be sensitive;
+inspect and redact before sharing (see [rclone dump documentation](https://rclone.org/docs/#dump)).
 
 - **The fix is `--s3-no-check-bucket`.** It suppresses the bucket-creation call; the upload then
   becomes a plain `PUT /<bucket>/<key>`.
@@ -30,14 +34,21 @@ this, so **first confirm the wire call** (`-vv --dump headers`) instead of assum
   choices, not part of the 403 fix, and they were not proven necessary one by one. They reduce
   client-side checks: `--s3-no-head` skips the post-upload read-back and `--s3-disable-checksum`
   drops the MD5 rclone would store and compare. Add them only for a stated reason, and if you do,
-  the independent checksum read-back below becomes the only integrity check — mandatory.
+  independently verify the uploaded payload as described below; a sidecar alone is insufficient.
 - If uploads go through a wrapper script, put the required flag inside it (`exec rclone ...`)
   and do not let a caller's environment override it. A rule that depends on remembering flags
   will be forgotten, and the next bare invocation will reproduce the misleading 403.
-- Verify an upload at the **object**: `LastModified` matching the job's end, size equal to the
-  local file, and a companion checksum read back from R2 and compared. Exit status alone is not
-  proof — check that the call is not inside a pipeline without `pipefail`, a conditional, or
-  followed by `||`, and prove failure propagation with a stub that exits non-zero.
+- Verify an upload at the **object**: timestamp consistent with the upload, size equal to the
+  finalized local artifact, and the **object's bytes** verified against its trusted local digest.
+  Download the authorized object to protected storage and hash it, or use an independently
+  validated payload-integrity mechanism appropriate to the backup format. Reading back a checksum
+  sidecar only checks that sidecar, not the payload; size and timestamp do not replace content
+  verification. If full read-back cannot be performed, report integrity as unverified rather than
+  claiming a sidecar comparison proves it. For restic, distinguish repository structure checks
+  from a data-reading check such as `check --read-data` under an approved resource budget
+  ([restic integrity checks](https://restic.readthedocs.io/en/stable/045_working_with_repos.html#checking-integrity-and-consistency)).
+  Exit status alone is not proof: check pipeline/conditional failure propagation and exercise it
+  with a stub that exits non-zero.
 
 ## restic through rclone serve
 
@@ -79,6 +90,10 @@ For a rule rollout, change, or removal, read
 [references/bucket-lock-rollout.md](references/bucket-lock-rollout.md).
 
 ## Authorization gate
+
+Prune and prefix cleanup need existing authorization covering the exact repository or objects,
+the destructive action, and the applicable retention/recovery policy. When that scope is absent,
+diagnose and prepare the action without deleting or pruning. Access to the bucket is not enough.
 
 Every Bucket Lock rule creation, change, or removal on a bucket that holds real data needs
 explicit confirmation from the bucket or account owner for that specific change — holding

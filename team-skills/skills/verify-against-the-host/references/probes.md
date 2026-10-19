@@ -27,24 +27,62 @@ host. `git ls-remote` (se usado) contacta um serviço externo e requer
 autorização.
 
 ```bash
-sha256sum /usr/local/libexec/PROJ/EXEC
-git show <SHA_REVISTO>:caminho/no/repo | sha256sum
-git -C REPO status --porcelain --untracked-files=all   # árvore limpa?
-git -C REPO rev-parse HEAD                              # SHA local
+set -o pipefail
+if ! git -C "$REPO" cat-file -e "$REVIEWED_SHA:$UNIT_FILE"; then
+  printf '%s\n' 'Não foi possível resolver o ficheiro no commit revisto.' >&2
+  exit 1
+fi
+git -C "$REPO" show "$REVIEWED_SHA:$UNIT_FILE" | sha256sum || exit 1
+sha256sum "$INSTALLED_UNIT_FILE" || exit 1
+git -C "$REPO" status --porcelain --untracked-files=all || exit 1
+git -C "$REPO" rev-parse HEAD || exit 1
 ```
+
+Os quatro parâmetros identificam o repositório, commit, caminho nesse commit e
+ficheiro instalado confirmados para a revisão. Compara os dois digests; imprimir
+dois hashes não afirma igualdade. Uma falha torna a comparação inconclusiva.
 
 ## Processos
 
+Num host Linux/systemd confirmado, obtém o PID do serviço autorizado e executa a
+leitura com uma identidade que já tenha acesso. Não alargues permissões para
+fazer passar a sonda; ausência de acesso é verificação não realizada.
+
 ```bash
-pid=$(systemctl show UNIT -p MainPID --value)
-tr '\0' '\n' < /proc/$pid/environ | cut -d= -f1     # só nomes de chaves
-readlink -f /proc/$pid/cwd
+pid=$(systemctl show UNIT -p MainPID --value) || exit 1
+python3 - "$pid" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+pid = sys.argv[1]
+if not pid.isascii() or not pid.isdecimal() or int(pid) <= 0:
+    raise SystemExit("PID inválido; ambiente não verificado.")
+entries = Path(f"/proc/{pid}/environ").read_bytes().split(b"\0")
+names = []
+for entry in entries:
+    if not entry:
+        continue
+    name, separator, _ = entry.partition(b"=")
+    if not separator or not name:
+        raise SystemExit("Entrada inválida; ambiente não verificado.")
+    names.append(name.decode("utf-8", errors="backslashreplace"))
+for name in names:
+    print(json.dumps(name, ensure_ascii=True))
+PY
 ```
 
-Isto exige Linux, systemd e acesso autorizado ao PID. `/proc/.../environ` mostra
-o ambiente inicial, não necessariamente a configuração consumida agora. A linha
-de comando pode conter tokens ou outros segredos; não a imprimas nem partilhes
-sem filtragem e autorização.
+A sonda exige Python 3 e acesso autorizado ao PID. Falhas de leitura ou análise
+têm de permanecer falhas, não uma lista vazia interpretada como sucesso. Os
+nomes são strings JSON, uma por linha; quebras de linha e caracteres de controlo
+ficam escapados. Nunca uses `tr` para converter o ambiente bruto em linhas antes
+de extrair os nomes. `/proc/.../environ` mostra o ambiente inicial, não
+necessariamente a configuração consumida agora. Para o diretório de trabalho,
+`readlink -f "/proc/$pid/cwd"` é uma leitura separada, se estiver autorizada.
+A linha de comando pode conter tokens; não a imprimas sem filtragem e autorização.
+
+Semântica do formato e limites da leitura: [proc_pid_environ(5)](https://man7.org/linux/man-pages/man5/proc_pid_environ.5.html)
+e [environ(7)](https://man7.org/linux/man-pages/man7/environ.7.html), consultados em 2026-10-19.
 
 ## Identidades e privilégios
 

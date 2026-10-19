@@ -1,0 +1,384 @@
+{
+  "report_format_version": 1,
+  "started_at": "2026-10-19T21:17:59.584804+00:00",
+  "status": "complete",
+  "source_base_commit": "11626fd49397033d29ceba1353bde34e436b66f7",
+  "scope": "First maintenance batch: autonomous packages and demonstrated security/evidence failures. Stable IDs and native selection/lifecycle contracts are preserved.",
+  "method": "Actual repository validate command, explicit Codex selector, one isolated package per assessment. The native prompt and evaluator implementation are unchanged.",
+  "authorization": "Existing explicit user authorization covers submission of these seven updated canonical packages to the authenticated Codex service outside the outer sandbox, preserving native evaluator read-only mode.",
+  "provider": "codex",
+  "cli_version": "codex-cli 0.163.0",
+  "model": null,
+  "model_note": "The native evaluator does not explicitly pin or report the model.",
+  "expected_skills": 7,
+  "concurrency": 3,
+  "results": [
+    {
+      "skill_id": "canonical-team-skill-authoring",
+      "baseline_digest_sha256": "c99162b086f6d5b401b58fb8642b75bd2cd539ad860f9ce4e2b104a4dadd5e18",
+      "assessed_digest_sha256": "4e36e216810829c6e7c07a763b2bff950c12d070fd1d2a5dd82e946f281e9abe",
+      "baseline_semantic_status": "needs_revision",
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "finance_adaptive_agents.team_skills",
+        "validate",
+        "canonical-team-skill-authoring",
+        "--selector",
+        "codex"
+      ],
+      "started_at": "2026-10-19T21:17:59.708515+00:00",
+      "exit_code": 0,
+      "semantic_status": "ready",
+      "blocking_change_count": 0,
+      "package_checks_passed": true,
+      "stdout": "\n╭─ Skill validation result ────────────────────────────────────────────╮\n│ Skill: canonical-team-skill-authoring                               │\n│ Package checks: PASSED                                               │\n├─────────────────────────────────────────────────────────────────────┤\n│ This report is local and read-only; it does not approve publication. │\n╰─────────────────────────────────────────────────────────────────────╯\n  Candidate changes: none (same package as the canonical baseline)\n  - Candidate package structure and portable identity are valid.\n  - Candidate exactly matches the current canonical package.\n[team-skills] Starting isolated codex assessment for this candidate only...\n\n╭─ Skill review ───────────────────────────────────────────────────────╮\n│ Status: READY                                                        │\n│ Recommendation: No proposal needed; package matches canonical.       │\n│ Blocking changes: 0                                                  │\n╰──────────────────────────────────────────────────────────────────────╯\n\nReason:\n  The package is suitable to propose for human review. It has a narrow trigger, self-\n  contained guidance, and explicit conditions around catalog contracts, workspace\n  evidence, and permissions.\n\nBoundary checks:\n  In scope: Given an authorized Git-backed team catalog, propose consolidating two\n            overlapping canonical Skills. Inspect its discovery descriptions, parser,\n            lifecycle rules, and tests; preserve stable identities where required; and\n            produce a validated proposal that accounts for installed consumers.\n  Out of scope: Create a private local Skill that helps one developer format weekly\n                status updates, without adding it to a canonical shared team catalog.\n\nAdditional observations:\n  - The discovery trigger is narrowly limited to canonical shared Skills in a Git-backed\n    team catalog and explicitly excludes private helpers and generated local Skills.\n  - The guidance is portable across catalogs: it requires inspecting target rules and\n    explicitly conditions the finance-adaptive-agents descriptor example on confirming\n    compatibility.\n  - Permissions and workspace facts remain conditional. The package grants no authority,\n    requires explicit authorization for commits and publication, and distinguishes\n    documented capabilities from observed availability.\n  - All referenced files are included, and necessary procedures do not depend on other\n    Skills.\n  - Actual catalog compatibility and operational behavior remain unverified; this\n    assessment supports proposing the package for human review only.\nNo Skill files were changed or published.\n",
+      "stderr": "",
+      "duration_seconds": 13.071,
+      "finished_at": "2026-10-19T21:18:12.636264+00:00",
+      "package_unchanged_during_assessment": true
+    },
+    {
+      "skill_id": "clerk-fastapi-trust-boundaries",
+      "baseline_digest_sha256": "9b39753104452c20b5e25c63c7a4bf940b8096f174ed7caa9aadec8b7c641cc7",
+      "assessed_digest_sha256": "5baf7e11d20221b176861a6c915abed875b0756f5c37c6d487b583473aa23cb5",
+      "baseline_semantic_status": "needs_revision",
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "finance_adaptive_agents.team_skills",
+        "validate",
+        "clerk-fastapi-trust-boundaries",
+        "--selector",
+        "codex"
+      ],
+      "started_at": "2026-10-19T21:17:59.702984+00:00",
+      "exit_code": 0,
+      "semantic_status": "ready",
+      "blocking_change_count": 0,
+      "package_checks_passed": true,
+      "stdout": "\n╭─ Skill validation result ────────────────────────────────────────────╮\n│ Skill: clerk-fastapi-trust-boundaries                               │\n│ Package checks: PASSED                                               │\n├─────────────────────────────────────────────────────────────────────┤\n│ This report is local and read-only; it does not approve publication. │\n╰─────────────────────────────────────────────────────────────────────╯\n  Candidate changes: none (same package as the canonical baseline)\n  - Candidate package structure and portable identity are valid.\n  - Candidate exactly matches the current canonical package.\n[team-skills] Starting isolated codex assessment for this candidate only...\n\n╭─ Skill review ───────────────────────────────────────────────────────╮\n│ Status: READY                                                        │\n│ Recommendation: No proposal needed; package matches canonical.       │\n│ Blocking changes: 0                                                  │\n╰──────────────────────────────────────────────────────────────────────╯\n\nReason:\n  Suitable to propose for human review: the skill is portable within its stated stack,\n  has a narrow architectural scope, and keeps deployment facts and sensitive actions\n  conditional.\n\nBoundary checks:\n  In scope: Review a proposed Clerk-authenticated Next.js BFF on Vercel calling FastAPI\n            through Cloudflare, and specify identity verification, tenant authorization,\n            Preview/Production isolation, and bypass tests.\n  Out of scope: Diagnose a Clerk sign-in form that fails on one Vercel preview\n                deployment after an environment-variable change.\n\nAdditional observations:\n  - The discovery trigger is bounded to authentication architecture across the named\n    stack, with deployment-specific sign-in repair explicitly excluded.\n  - The guidance separates user identity, service identity, resource authorization, and\n    origin protection without assuming a deployment implements any of them.\n  - Workspace-dependent protections require verification; unavailable evidence remains\n    unknown. Sensitive configuration and deployment changes require explicit\n    environment-owner approval.\n  - Provider-specific guidance includes references to re-check when dependencies change;\n    their accuracy is not established by this package-only assessment.\nNo Skill files were changed or published.\n",
+      "stderr": "",
+      "duration_seconds": 12.634,
+      "finished_at": "2026-10-19T21:18:12.193435+00:00",
+      "package_unchanged_during_assessment": true
+    },
+    {
+      "skill_id": "cloudflare-r2-backups-and-bucket-lock",
+      "baseline_digest_sha256": "4119cf029fdbd9d8a543b8b270dabacd02ac920875c00c6011bbc2a07ced7e9f",
+      "baseline_semantic_status": "needs_revision",
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "finance_adaptive_agents.team_skills",
+        "validate",
+        "cloudflare-r2-backups-and-bucket-lock",
+        "--selector",
+        "codex"
+      ],
+      "started_at": "2026-10-19T21:22:53.474935+00:00",
+      "assessed_digest_sha256": "0ce8b8174aef1b74163f80575c16e8e27b83f16b4f5da50db1bb43a66499f3cf",
+      "exit_code": 0,
+      "semantic_status": "ready",
+      "blocking_change_count": 0,
+      "package_checks_passed": true,
+      "stdout": "\n╭─ Skill validation result ────────────────────────────────────────────╮\n│ Skill: cloudflare-r2-backups-and-bucket-lock                        │\n│ Package checks: PASSED                                               │\n├─────────────────────────────────────────────────────────────────────┤\n│ This report is local and read-only; it does not approve publication. │\n╰─────────────────────────────────────────────────────────────────────╯\n  Candidate changes: none (same package as the canonical baseline)\n  - Candidate package structure and portable identity are valid.\n  - Candidate exactly matches the current canonical package.\n[team-skills] Starting isolated codex assessment for this candidate only...\n\n╭─ Skill review ───────────────────────────────────────────────────────╮\n│ Status: READY                                                        │\n│ Recommendation: No proposal needed; package matches canonical.       │\n│ Blocking changes: 0                                                  │\n╰──────────────────────────────────────────────────────────────────────╯\n\nReason:\n  Ready for human review: the package has a focused trigger, portable guidance, explicit\n  evidence limits, and conditional authorization boundaries.\n\nBoundary checks:\n  In scope: An existing bucket-scoped R2 token produces 403 AccessDenied during an\n            rclone upload. Diagnose whether the failed request attempts bucket creation,\n            prepare the minimal compatibility change, and verify an authorized test\n            object's actual bytes without exposing credentials.\n  Out of scope: Configure AWS S3 Object Lock retention for a new restic repository. This\n                must not activate the Skill.\n\nAdditional observations:\n  - Discovery is limited to two specific R2 failure patterns and Bucket Lock operations,\n    with explicit exclusions for working uploads and AWS S3 Object Lock.\n  - Permissions, credentials, installation policy, and destructive maintenance\n    authorization remain conditional; the package does not assume access to a particular\n    workspace.\n  - Empirical claims identify their account, token, and client-version limits. They are\n    useful diagnostic hypotheses, not independently established universal behavior.\n  - The package distinguishes payload verification from sidecar checks and repository\n    structure checks, and protects diagnostic traces from accidental disclosure.\n  - Dashboard-only verification and a single shared invocation constant are prescriptive\n    workflow choices that may require adaptation in other environments.\n  - Suitable to propose for human review; this assessment does not validate the\n    technical observations, publish the Skill, or authorize bucket operations.\nNo Skill files were changed or published.\n",
+      "stderr": "",
+      "duration_seconds": 15.639,
+      "finished_at": "2026-10-19T21:23:08.974653+00:00",
+      "package_unchanged_during_assessment": true
+    },
+    {
+      "skill_id": "credential-source-cutovers",
+      "baseline_digest_sha256": "848180c05dad349765e62e5d93a69837fbb04df3605a1c738667288ffbf31da3",
+      "assessed_digest_sha256": "320d05f38d1219853dda84ab12956f56c26c85b40e74659e42385cd946b02d1b",
+      "baseline_semantic_status": "needs_revision",
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "finance_adaptive_agents.team_skills",
+        "validate",
+        "credential-source-cutovers",
+        "--selector",
+        "codex"
+      ],
+      "started_at": "2026-10-19T21:18:12.196489+00:00",
+      "exit_code": 0,
+      "semantic_status": "ready",
+      "blocking_change_count": 0,
+      "package_checks_passed": true,
+      "stdout": "\n╭─ Skill validation result ────────────────────────────────────────────╮\n│ Skill: credential-source-cutovers                                   │\n│ Package checks: PASSED                                               │\n├─────────────────────────────────────────────────────────────────────┤\n│ This report is local and read-only; it does not approve publication. │\n╰─────────────────────────────────────────────────────────────────────╯\n  Candidate changes: none (same package as the canonical baseline)\n  - Candidate package structure and portable identity are valid.\n  - Candidate exactly matches the current canonical package.\n[team-skills] Starting isolated codex assessment for this candidate only...\n\n╭─ Skill review ───────────────────────────────────────────────────────╮\n│ Status: READY                                                        │\n│ Recommendation: No proposal needed; package matches canonical.       │\n│ Blocking changes: 0                                                  │\n╰──────────────────────────────────────────────────────────────────────╯\n\nReason:\n  Suitable to propose for human review: the Skill is portable, narrowly triggered, and\n  keeps permissions and environment-dependent actions conditional.\n\nBoundary checks:\n  In scope: Plan an authorized migration of an existing application's database\n            credentials from a protected local file to a secret store, accounting for\n            background workers and recovery paths, and specify separate evidence for\n            copying, consumption, authentication, and any planned revocation.\n  Out of scope: Create the first API credential for a new application with no existing\n                credential sources, aliases, or consumers to migrate.\n\nAdditional observations:\n  - The discovery trigger is narrow: existing credential consumers undergoing source\n    migration, alias reconciliation, or exposure-related rotation. Initial credential\n    creation and unauthenticated configuration are explicitly excluded.\n  - The workflow is portable across services and secret stores. Product versions and\n    incident details are explicitly contextual evidence, not workspace prerequisites.\n  - Permissions remain conditional: the Skill grants no secret access, authentication-\n    test authority, or service-change permission, and prohibits privilege expansion.\n  - The four separate proofs—faithful copying, effective consumption, authentication and\n    identity, and revocation—provide concrete completion criteria without assuming a\n    particular environment.\n  - Recovery, deferred failures, and missing evidence remain explicitly bounded;\n    restoring a local file is correctly distinguished from reversing external\n    revocation.\nNo Skill files were changed or published.\n",
+      "stderr": "",
+      "duration_seconds": 13.019,
+      "finished_at": "2026-10-19T21:18:25.215444+00:00",
+      "package_unchanged_during_assessment": true
+    },
+    {
+      "skill_id": "effective-config-tracing",
+      "baseline_digest_sha256": "70dac38661e79f5439d413bc40ed5dc772370f83bc34cee0d24caa19d23c273d",
+      "baseline_semantic_status": "needs_revision",
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "finance_adaptive_agents.team_skills",
+        "validate",
+        "effective-config-tracing",
+        "--selector",
+        "codex"
+      ],
+      "started_at": "2026-10-19T21:22:53.473486+00:00",
+      "assessed_digest_sha256": "0b844482434c3964a1033af667774f5e1bf5e7e336f46cd40c89aa6fcbfd4d7e",
+      "exit_code": 0,
+      "semantic_status": "ready",
+      "blocking_change_count": 0,
+      "package_checks_passed": true,
+      "stdout": "\n╭─ Skill validation result ────────────────────────────────────────────╮\n│ Skill: effective-config-tracing                                     │\n│ Package checks: PASSED                                               │\n├─────────────────────────────────────────────────────────────────────┤\n│ This report is local and read-only; it does not approve publication. │\n╰─────────────────────────────────────────────────────────────────────╯\n  Candidate changes: none (same package as the canonical baseline)\n  - Candidate package structure and portable identity are valid.\n  - Candidate exactly matches the current canonical package.\n[team-skills] Starting isolated codex assessment for this candidate only...\n\n╭─ Skill review ───────────────────────────────────────────────────────╮\n│ Status: READY                                                        │\n│ Recommendation: No proposal needed; package matches canonical.       │\n│ Blocking changes: 0                                                  │\n╰──────────────────────────────────────────────────────────────────────╯\n\nReason:\n  Suitable to propose for human review. The skill is portable, permission-aware, and\n  narrowly triggered; this assessment does not publish or approve it.\n\nBoundary checks:\n  In scope: An operator reports that a service still uses its previous output directory\n            after an environment-file update. With authorized diagnostic access, trace\n            applicable configuration sources, establish what the application consumes,\n            and determine whether loading is pending.\n  Out of scope: Fix a syntax error in a service configuration that prevents startup,\n                with no evidence of a discrepancy between declared and effective\n                configuration.\n\nAdditional observations:\n  - The discovery trigger is narrow: an observed or concretely suspected discrepancy\n    between declared and effective configuration. Identity changes alone and unrelated\n    parsing failures are explicitly excluded.\n  - Platform, runtime, API, version, access, and authorization assumptions remain\n    conditional. The package does not presume repository access, credentials, or a\n    particular deployment layout.\n  - The workflow distinguishes installed configuration, loaded state, and observed\n    behavior, and preserves inconclusive results when access or evidence is missing.\n  - Host-specific anecdotes are explicitly bounded, but their underlying evidence is\n    absent from the package. Treat them as illustrative reports rather than\n    independently verified results.\n  - The illustrative orchestrator endpoint adds specificity without establishing a\n    dependency; its use is explicitly gated on confirming the actual API and\n    authorization.\nNo Skill files were changed or published.\n",
+      "stderr": "",
+      "duration_seconds": 14.366,
+      "finished_at": "2026-10-19T21:23:07.699520+00:00",
+      "package_unchanged_during_assessment": true
+    },
+    {
+      "skill_id": "mcp-api-capability-triage",
+      "baseline_digest_sha256": "5789236e48c71265809356e97704239484f7265cd5c3afd93806a963d661e111",
+      "assessed_digest_sha256": "837daa365dedabf9270051e797e382fd423839bfc4801028c48b37ecf641247f",
+      "baseline_semantic_status": "needs_revision",
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "finance_adaptive_agents.team_skills",
+        "validate",
+        "mcp-api-capability-triage",
+        "--selector",
+        "codex"
+      ],
+      "started_at": "2026-10-19T21:18:15.980436+00:00",
+      "exit_code": 0,
+      "semantic_status": "ready",
+      "blocking_change_count": 0,
+      "package_checks_passed": true,
+      "stdout": "\n╭─ Skill validation result ────────────────────────────────────────────╮\n│ Skill: mcp-api-capability-triage                                    │\n│ Package checks: PASSED                                               │\n├─────────────────────────────────────────────────────────────────────┤\n│ This report is local and read-only; it does not approve publication. │\n╰─────────────────────────────────────────────────────────────────────╯\n  Candidate changes: none (same package as the canonical baseline)\n  - Candidate package structure and portable identity are valid.\n  - Candidate exactly matches the current canonical package.\n[team-skills] Starting isolated codex assessment for this candidate only...\n\n╭─ Skill review ───────────────────────────────────────────────────────╮\n│ Status: READY                                                        │\n│ Recommendation: No proposal needed; package matches canonical.       │\n│ Blocking changes: 0                                                  │\n╰──────────────────────────────────────────────────────────────────────╯\n\nReason:\n  Suitable to propose for human review: the skill has a focused diagnostic purpose and\n  keeps access paths, credentials, and permissions conditional on the target\n  environment.\n\nBoundary checks:\n  In scope: An MCP connects but exposes only documentation tools, while the user needs\n            an authorized read of a staging account record. Determine whether an exposed\n            tool, official CLI, or documented API supports the read without expanding\n            access.\n  Out of scope: Explain an SDK's pagination syntax when no account operation, missing\n                capability, or ambiguous API failure needs diagnosis.\n\nAdditional observations:\n  - The trigger targets missing MCP operations and ambiguous service API failures,\n    rather than routine integration work.\n  - Tool availability, credentials, environments, and authority are checked in the\n    target workspace rather than assumed.\n  - Transport changes explicitly preserve authorization boundaries, and uncertain writes\n    require reconciliation or documented idempotency before retrying.\n  - The Clerk anecdote cannot be verified from this package, but it is explicitly\n    illustrative and requires fresh capability inspection; removing it would improve\n    portability.\nNo Skill files were changed or published.\n",
+      "stderr": "",
+      "duration_seconds": 13.52,
+      "finished_at": "2026-10-19T21:18:29.500267+00:00",
+      "package_unchanged_during_assessment": true
+    },
+    {
+      "skill_id": "verify-against-the-host",
+      "baseline_digest_sha256": "145bd61a88cb6683a86796d186677250f6b2003f5503b1a44878219b6dfd830b",
+      "assessed_digest_sha256": "4c0196694470c6298c9fba69c9eec884c557eee18ff639d620aa7690af54eed3",
+      "baseline_semantic_status": "needs_revision",
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "finance_adaptive_agents.team_skills",
+        "validate",
+        "verify-against-the-host",
+        "--selector",
+        "codex"
+      ],
+      "started_at": "2026-10-19T21:18:25.219422+00:00",
+      "exit_code": 0,
+      "semantic_status": "ready",
+      "blocking_change_count": 0,
+      "package_checks_passed": true,
+      "stdout": "\n╭─ Skill validation result ────────────────────────────────────────────╮\n│ Skill: verify-against-the-host                                      │\n│ Package checks: PASSED                                               │\n├─────────────────────────────────────────────────────────────────────┤\n│ This report is local and read-only; it does not approve publication. │\n╰─────────────────────────────────────────────────────────────────────╯\n  Candidate changes: none (same package as the canonical baseline)\n  - Candidate package structure and portable identity are valid.\n  - Candidate exactly matches the current canonical package.\n[team-skills] Starting isolated codex assessment for this candidate only...\n\n╭─ Skill review ───────────────────────────────────────────────────────╮\n│ Status: READY                                                        │\n│ Recommendation: No proposal needed; package matches canonical.       │\n│ Blocking changes: 0                                                  │\n╰──────────────────────────────────────────────────────────────────────╯\n\nReason:\n  Suitable to propose for human review: portable, narrowly triggered, and explicit about\n  authorization and missing evidence. This assessment does not publish or approve the\n  Skill.\n\nBoundary checks:\n  In scope: Review a proposed systemd unit change using supplied installed-unit\n            contents, the proposed revision, and operator-provided service metadata.\n            Identify drift, identity and dependency risks, and verification gaps without\n            assuming host access.\n  Out of scope: Review a local CSV parser refactor and its passing unit tests when no\n                deployment, installed configuration, privileges, or production-host\n                behavior changes.\n\nAdditional observations:\n  - The discovery trigger is narrow: reviewing a proposed change that affects a\n    production host. Generic code review is explicitly excluded.\n  - Host access, remote contact, execution, tools, paths, identities, and service\n    configuration remain conditional on confirmed facts and authorization. Artifact-only\n    review is explicitly supported.\n  - The package is self-contained; its reference file is included and the other named\n    Skill is optional.\n  - Some probe comments simplify their meaning, particularly sudo password behavior and\n    NoNewPrivileges reproduction. The surrounding caveats appropriately limit the\n    conclusions.\n  - The opening claim about the predominant cause of production errors is unsupported\n    and unnecessary, but does not block review.\nNo Skill files were changed or published.\n",
+      "stderr": "",
+      "duration_seconds": 14.459,
+      "finished_at": "2026-10-19T21:18:39.528355+00:00",
+      "package_unchanged_during_assessment": true
+    }
+  ],
+  "limitations": [
+    "Model verdicts are textual reviews for human review, not certifications of technical correctness.",
+    "No real host, credentials, R2 bucket, restic repository, DNS or external write was tested.",
+    "Behavioral tests and an independent synthetic exercise are recorded separately."
+  ],
+  "finished_at": "2026-10-19T21:23:08.985179+00:00",
+  "summary": {
+    "ready": 7
+  },
+  "assessment_history": [
+    {
+      "skill_id": "cloudflare-r2-backups-and-bucket-lock",
+      "baseline_digest_sha256": "4119cf029fdbd9d8a543b8b270dabacd02ac920875c00c6011bbc2a07ced7e9f",
+      "assessed_digest_sha256": "bbef0e91274232ee0cc7a2cffcfa0a1fcb971d17bb61f4e4326794349029a8ec",
+      "baseline_semantic_status": "needs_revision",
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "finance_adaptive_agents.team_skills",
+        "validate",
+        "cloudflare-r2-backups-and-bucket-lock",
+        "--selector",
+        "codex"
+      ],
+      "started_at": "2026-10-19T21:17:59.710401+00:00",
+      "exit_code": 0,
+      "semantic_status": "ready",
+      "blocking_change_count": 0,
+      "package_checks_passed": true,
+      "stdout": "\n╭─ Skill validation result ────────────────────────────────────────────╮\n│ Skill: cloudflare-r2-backups-and-bucket-lock                        │\n│ Package checks: PASSED                                               │\n├─────────────────────────────────────────────────────────────────────┤\n│ This report is local and read-only; it does not approve publication. │\n╰─────────────────────────────────────────────────────────────────────╯\n  Candidate changes: none (same package as the canonical baseline)\n  - Candidate package structure and portable identity are valid.\n  - Candidate exactly matches the current canonical package.\n[team-skills] Starting isolated codex assessment for this candidate only...\n\n╭─ Skill review ───────────────────────────────────────────────────────╮\n│ Status: READY                                                        │\n│ Recommendation: No proposal needed; package matches canonical.       │\n│ Blocking changes: 0                                                  │\n╰──────────────────────────────────────────────────────────────────────╯\n\nReason:\n  Suitable to propose for human review. The package has a bounded trigger, qualified\n  evidence, and explicit authorization boundaries. This assessment does not publish or\n  approve it.\n\nBoundary checks:\n  In scope: An operator reports R2 upload failures with 403 AccessDenied using an older\n            rclone and a bucket-scoped token. Diagnose the sanitized request sequence,\n            propose --s3-no-check-bucket if bucket creation is confirmed, and prepare\n            authorized payload verification.\n  Out of scope: Configure AWS S3 Object Lock retention for a new backup bucket.\n\nAdditional observations:\n  - Discovery is bounded to specific R2 failure symptoms and Bucket Lock work, with\n    explicit exclusions for working uploads and AWS S3 Object Lock.\n  - Account permissions, destructive maintenance, rule changes, and probe operations are\n    conditional on existing authorization; the package does not grant access.\n  - Empirical claims identify their account, client versions, and observation dates, and\n    require rechecking consequential assumptions.\n  - The rollout reference's phrase \"checksum read-back\" could more clearly repeat the\n    main file's requirement to verify payload bytes rather than a checksum sidecar.\n  - The closing instruction to pin rclone \"the same way the restic binary is pinned\"\n    assumes an existing installation practice. Making that advice conditional would\n    improve portability.\nNo Skill files were changed or published.\n",
+      "stderr": "",
+      "duration_seconds": 16.411,
+      "finished_at": "2026-10-19T21:18:15.977565+00:00",
+      "package_unchanged_during_assessment": true,
+      "superseded_reason": "Final wording clarification after reading the first native assessment."
+    },
+    {
+      "skill_id": "effective-config-tracing",
+      "baseline_digest_sha256": "70dac38661e79f5439d413bc40ed5dc772370f83bc34cee0d24caa19d23c273d",
+      "assessed_digest_sha256": "8926b09f54da309e90e437b9d278043dab38bbf80043689d94cccc22c18e2bcf",
+      "baseline_semantic_status": "needs_revision",
+      "command": [
+        ".venv/bin/python",
+        "-m",
+        "finance_adaptive_agents.team_skills",
+        "validate",
+        "effective-config-tracing",
+        "--selector",
+        "codex"
+      ],
+      "started_at": "2026-10-19T21:18:12.639905+00:00",
+      "exit_code": 0,
+      "semantic_status": "ready",
+      "blocking_change_count": 0,
+      "package_checks_passed": true,
+      "stdout": "\n╭─ Skill validation result ────────────────────────────────────────────╮\n│ Skill: effective-config-tracing                                     │\n│ Package checks: PASSED                                               │\n├─────────────────────────────────────────────────────────────────────┤\n│ This report is local and read-only; it does not approve publication. │\n╰─────────────────────────────────────────────────────────────────────╯\n  Candidate changes: none (same package as the canonical baseline)\n  - Candidate package structure and portable identity are valid.\n  - Candidate exactly matches the current canonical package.\n[team-skills] Starting isolated codex assessment for this candidate only...\n\n╭─ Skill review ───────────────────────────────────────────────────────╮\n│ Status: READY                                                        │\n│ Recommendation: No proposal needed; package matches canonical.       │\n│ Blocking changes: 0                                                  │\n╰──────────────────────────────────────────────────────────────────────╯\n\nReason:\n  Suitable to propose for human review: the skill is portable, conditionally handles\n  workspace facts and permissions, and has a sufficiently narrow trigger.\n\nBoundary checks:\n  In scope: An authorized operator reports that changing an environment file had no\n            effect on a systemd service. Trace the applicable sources, establish which\n            value the application consumes using safe diagnostics, and determine whether\n            loading is pending.\n  Out of scope: A service fails with an explicit configuration syntax error after an\n                edit, with no evidence of a difference between declared and effective\n                settings. Diagnose the parsing error without activating this skill.\n\nAdditional observations:\n  - The discovery trigger requires evidence or concrete suspicion of declared versus\n    effective configuration drift and explicitly excludes parsing errors and unrelated\n    failures.\n  - Platform, tooling, access, external APIs, identities, paths, and reload capabilities\n    are conditional. The package does not grant permission to change services or broaden\n    access.\n  - The workflow distinguishes installed configuration, loaded state, and observed\n    behavior, and handles unavailable evidence as inconclusive.\n  - The dated host observations are explicitly limited examples, not portable\n    guarantees. The timer example would be clearer without an incident-specific date and\n    implied transition chronology.\n  - The illustrative orchestrator endpoint adds specificity without establishing a\n    dependency; its authorization and schema checks are explicit.\nNo Skill files were changed or published.\n",
+      "stderr": "",
+      "duration_seconds": 25.087,
+      "finished_at": "2026-10-19T21:18:37.576419+00:00",
+      "package_unchanged_during_assessment": true,
+      "superseded_reason": "Final wording clarification after reading the first native assessment."
+    }
+  ],
+  "final_package_digests_verified_at": "2026-10-19T21:24:35.874191+00:00",
+  "canonical_baseline_note": "The native command compares against the current canonical package in the working tree, so its no-changes recommendation is not a comparison with Git HEAD. Original pre-maintenance digests and verdicts are recorded separately for each result.",
+  "validation_evidence": {
+    "focused_examples": {
+      "command": "PYTHONPATH=src .venv/bin/python -m pytest tests/test_canonical_skill_examples.py -q",
+      "exit_code": 0,
+      "passed": 16,
+      "method": "Execute actual fenced package examples with synthetic process environments and temporary Git fixtures. Cover multiline values, escaped names, invalid PIDs, exact bytes and unavailable Git content."
+    },
+    "full_regression": {
+      "command": "PYTHONPATH=src .venv/bin/python -m pytest -q -o faulthandler_timeout=120 --junitxml=/tmp/team-skills-maintenance-pytest.xml",
+      "exit_code": 0,
+      "tests": 193,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "duration_seconds": 35.027,
+      "environment_note": "An earlier run stalled inside the outer sandbox and was interrupted. The completed run used the same tests outside that restriction. One stale URL expectation was corrected after the first completed regression exposed it."
+    },
+    "package_format": {
+      "validator": "skill-creator/scripts/quick_validate.py",
+      "packages": 7,
+      "passed": 7,
+      "exit_code": 0
+    },
+    "diff_check": {
+      "command": "git diff --check",
+      "exit_code": 0
+    },
+    "independent_forward_exercise": {
+      "agent": "/root/probe_forward_exercise",
+      "scope": [
+        "verify-against-the-host",
+        "effective-config-tracing"
+      ],
+      "independence": "A separate agent received only the two packages, repository instructions and the synthetic exercise scope. It did not receive prior reports, expected defects, the implementation tests or their expected answers.",
+      "environment": "Disposable local Git and process fixtures; no real host, credentials, service manager operation, network or repository edits.",
+      "observations": [
+        "Different installed bytes produced distinct digests; identical bytes produced matching digests. Successful command exit alone was not treated as equality.",
+        "Unavailable reviewed revision/file failed with no digest output; unavailable installed artifact failed after the reviewed digest, leaving comparison inconclusive.",
+        "A child with synthetic multiline values and a control character in a variable name emitted only JSON-escaped names; no value fragments were reported.",
+        "PIDs 0, -1 and not-a-pid failed with no stdout."
+      ],
+      "fixture_reviewed_digest_sha256": "eccc2c9dcce1633762985ae7dab7169feef5cbf14f2fd7433d47b1ca5d2d9414",
+      "fixture_installed_digest_sha256": "31ff9db6f39ce66a1be993dc4eecf80dc04e9a8e029a40cea0ad8127ff67a5bc",
+      "limitations": [
+        "No real systemd behavior, effective consumed values, access policy, configuration precedence, readiness or rollback was established.",
+        "Malformed proc entries and a lack-of-access case were not exercised.",
+        "A quoted file path in a fixture does not establish that its basename is a valid real systemd unit name."
+      ],
+      "result": "No failures found within this bounded synthetic exercise."
+    }
+  },
+  "maintenance_review": {
+    "product_direction": "Biblioteca geral para agentes e tarefas, incluindo trabalho sem projeto. Finance é um contexto de origem. Preservar mecanismos tecnológicos úteis e separar política de projeto; generalizar a decisão, sem apagar a evidência concreta.",
+    "changes": {
+      "canonical-team-skill-authoring": "Clarifica os três níveis de conhecimento, a autonomia de cada pacote e a aplicação condicional do contrato deste catálogo.",
+      "clerk-fastapi-trust-boundaries": "Remove a dependência operacional de uma skill irmã; mantém o âmbito arquitetural e explicita a evidência mínima para reconhecer um incidente de deployment fora desse âmbito.",
+      "credential-source-cutovers": "Substitui encaminhamentos obrigatórios por limites e critérios mínimos próprios, preservando as quatro provas de conclusão.",
+      "cloudflare-r2-backups-and-bucket-lock": "Distingue bytes do payload, sidecars, estrutura e restauro; protege traces; condiciona prune, retenção e instalação à autorização e política existentes.",
+      "effective-config-tracing": "Corrige a sonda que podia revelar fragmentos de valores multilinha; distingue ambiente inicial de configuração consumida; preserva overrides intencionais e qualifica o exemplo do timer.",
+      "mcp-api-capability-triage": "Distingue falha anterior ao envio de resultado desconhecido após envio; exige reconciliação ou idempotência documentada antes de repetir escritas.",
+      "verify-against-the-host": "Corrige a sonda de ambiente e alinha a referência Git com a verificação dos bytes reais e a preservação de falhas."
+    },
+    "assessment_opinion": [
+      {
+        "observation": "Os sete pacotes são autónomos e têm limites de autorização e evidência mais claros.",
+        "decision": "Concordo, com apoio dos testes locais no subconjunto executável; ready continua a ser um parecer textual."
+      },
+      {
+        "observation": "Clarificar checksum read-back e a suposição de pinning já existente de restic.",
+        "decision": "Aceite e corrigido; R2 foi reavaliada sobre o digest final, preservando o primeiro parecer."
+      },
+      {
+        "observation": "O exemplo do timer sugere uma cronologia de incidente que não está demonstrada.",
+        "decision": "Aceite parcialmente: mantive o mecanismo e o contexto datado, mas explicitei que não provam execução após a transição; reavaliação final pronta."
+      },
+      {
+        "observation": "Remover a anedota de Clerk para melhorar portabilidade.",
+        "decision": "Não adotei a remoção apenas por ser específica de software. Um exemplo contextual e sujeito a inspeção atual é conhecimento útil; não constitui requisito desse fornecedor."
+      },
+      {
+        "observation": "Há observações empíricas de versões e hosts que o avaliador não consegue confirmar.",
+        "decision": "Concordo com a limitação. Preservei-as como hipóteses ou relatos delimitados; não executei operações reais para as certificar."
+      },
+      {
+        "observation": "Há formulações opcionais ainda a polir, como uma afirmação ampla sobre causas de erros e escolhas prescritivas de workflow em R2.",
+        "decision": "Registadas para manutenção editorial posterior; nenhum parecer final as classificou como bloqueantes e não constituem prova de comportamento técnico."
+      }
+    ],
+    "test_maintenance": [
+      "Atualizada a expectativa exata do catálogo para incluir research-dispatch-transport-boundary, já existente no catálogo de 38 skills.",
+      "Atualizada a expectativa exata do URL padrão para o valor com hífen já definido em consumer.py; não se alterou o produto para fazer passar o teste."
+    ],
+    "preserved": [
+      "Stable skill identities and catalog metadata",
+      "Native selector, admission, integrity, lifecycle and validation implementations",
+      "Historical catalog review and original 38-package validation reports"
+    ],
+    "publication": "Local working-tree changes only; no commit, push or publication performed."
+  },
+  "scope_completion": {
+    "first_batch_complete": true,
+    "entire_catalog_maintenance_complete": false,
+    "updated_skills": 7,
+    "remaining_prior_needs_revision": 19,
+    "remaining_skill_ids": [
+      "ci-cost-and-duration-under-agent-load",
+      "clerk-vercel-auth-environments",
+      "codex-mcp-project-scope",
+      "diagnose-host-failures",
+      "enforceable-invariants-for-agent-code",
+      "guards-that-pass-blindly",
+      "host-mutation-batches",
+      "openssh-socket-activation-listeners",
+      "organization-resource-authorization",
+      "postgres-logical-restore-proofs",
+      "prefect-self-hosted-operations",
+      "private-research-artifact-access",
+      "production-faithful-integration-proofs",
+      "public-projections-of-confidential-data",
+      "research-dispatch-transport-boundary",
+      "research-job-quota-ledger",
+      "stateful-service-migrations",
+      "stripe-entitlement-reconciliation",
+      "systemd-root-units-and-sandbox-pitfalls"
+    ],
+    "note": "The remaining verdicts are from the original assessment and have not been revalidated in this batch."
+  }
+}

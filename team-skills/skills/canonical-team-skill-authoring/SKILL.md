@@ -39,6 +39,16 @@ or workspace scope when relevant. A single incident may justify a narrow safety 
 not present it as a universal rule without corroboration. If the Skill adds no meaningful
 decision value beyond current documentation, do not canonize it as team knowledge.
 
+Separate the transferable decision from technology-specific mechanisms and project policy.
+Keep concrete mechanisms when they carry the learning; generic wording alone is not reuse.
+A project-specific package is legitimate when its intended audience and applicability are clear.
+
+Each selected package must work within its declared scope using its own instructions and
+included references. Do not require another Skill to complete a necessary step: it may not have
+been selected or installed. Put necessary detail in this package, state boundaries directly,
+and keep cross-Skill mentions optional. This does not call for copying adjacent Skills or
+adding automatic dependency resolution.
+
 ## Author and validate
 
 Keep `name` and `description` narrow enough for reliable discovery. Put shared purpose,
