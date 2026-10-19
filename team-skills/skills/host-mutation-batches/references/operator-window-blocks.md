@@ -47,6 +47,38 @@ backups e de migrações de schema num host único com deploys automáticos.
   código de saída.
 - Valida dono, modo e tipo do recibo, não só o conteúdo.
 
+## Helpers escritos para a janela
+
+Quando o bloco chama um helper preparado para essa janela (um script Python ou
+shell revisto), os erros repetem-se de helper para helper. Observado em
+18–19/10/2026:
+
+- **Sem datas fixas.** Um guard `date == <dia aprovado>` bloqueia o corte se a
+  janela passar da meia-noite, e pior, bloqueia os rollbacks. O guard verifica
+  as janelas proibidas e o tempo que o passo precisa, não o calendário.
+- **Os rollbacks não passam pelos guards de avanço.** Um rollback exige root e
+  respeita as janelas proibidas, mais nada: não depende da data, do estado das
+  flags, nem de o estado instalado ser o esperado. Senão, o caminho de recuperação
+  falha precisamente quando é preciso.
+- **SHAs e versões são parâmetros verificados contra o instalado**, não
+  constantes. Um merge com deploy automático entre a preparação e a janela muda
+  o componente instalado; o helper deve recusar com uma mensagem clara, e o
+  preparador volta a fixar. Não escondas o SHA dentro do código.
+- **O snapshot lista tudo o que o helper vai tocar**, incluindo dependências
+  acrescentadas por PRs recentes (um script novo de que a rotação passou a
+  depender, uma política que vai mudar). Compara a lista com o diff da release.
+- **Identidades novas sem LOGIN até haver password**, verificado no catálogo
+  antes de abrir o login. Se o servidor tiver regras `trust` locais, um login sem
+  password aberto entra sem nada.
+- **Comparações exatas com linha de base**, não "zero avisos": regista os avisos
+  conhecidos antes e exige igualdade exata depois.
+- **Margens de tempo a partir de durações medidas** (journal das execuções
+  anteriores), declaradas por bloco.
+
+Se o mesmo tipo de operação se repete, transforma o helper num procedimento
+versionado e testado no repositório de infraestrutura, invocado com parâmetros,
+em vez de escrever outro na próxima janela.
+
 ## Coordenação
 
 - Durante a janela não entram merges em repositórios com deploy automático

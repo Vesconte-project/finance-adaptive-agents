@@ -153,6 +153,20 @@ exceção a:
 
 Assim a exceção descreve um facto histórico e não uma permissão futura.
 
+## Um lock que nunca está ocupado
+
+Um lock de exclusão mútua é um guarda: só protege se os dois lados abrirem o
+**mesmo ficheiro**. Caso observado (19/10/2026): o backup usava
+`$BACKUP_ROOT/.lock` (lido de um ficheiro de caminhos instalado) e a rotação de
+passwords tinha o caminho escrito à mão, sem o subdiretório. Os dois `flock`
+nunca colidiam e a rotação "obtinha o lock" sempre.
+
+- Os dois lados resolvem o caminho pela **mesma função e fonte**, sem fallback
+  para um caminho fixo. Se a fonte faltar ou for inválida, recusa.
+- Um teste prova a exclusão: com o lock ocupado por outro processo, o segundo
+  lado recusa antes de qualquer alteração.
+- Um teste impede reintroduzir caminhos literais para esse lock.
+
 ## Sinais de alarme
 
 Para distinguir falha de execução de resultado lógico e decidir a consequência por operação, lê [references/guard-failure-semantics.md](references/guard-failure-semantics.md).
@@ -163,6 +177,7 @@ Para distinguir falha de execução de resultado lógico e decidir a consequênc
 - Uma allowlist por caminho, ficheiro ou identidade.
 - Uma regra de deteção construída com sufixos de nomes.
 - Uma etapa privilegiada cujo privilégio ninguém demonstrou.
+- Um lock com caminho literal diferente do que a outra parte usa.
 
 ## Quando não aplicar
 

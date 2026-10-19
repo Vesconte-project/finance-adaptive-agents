@@ -43,6 +43,24 @@ Components that run scheduled work are activated only when no run is active or d
 made before a dense block of scheduled runs can legitimately stay deferred for hours. Do not
 "fix" a deferral by restarting services by hand; check the forecast and the result first.
 
+## Closed lists that live in another repository
+
+The release engine's configuration in `finance-infra` holds a **closed list** of the Prefect
+deployment names each component publishes (`expected_names`). Adding a deployment to a
+component's `prefect.yaml` without adding it there makes activation refuse ("publication is
+incomplete"); the automatic rollback then republishes the old deployments but cannot remove the
+new one, so it reports "rollback was incomplete" and the component stays on the previous release.
+Observed on 2026-10-18 when a weekly-atlas deployment was added to the feature store.
+
+- When a component PR adds or renames a deployment, prepare the matching `finance-infra` change
+  in the same piece of work, and merge it **before** the component PR, or the deploy fails.
+- After any feature-store or data-ops release, confirm both the release receipt and the Prefect
+  state: every schedule still `active: false` while production schedules are on hold, and no
+  scheduled or running flow runs.
+- Treat other cross-repository pins the same way: a manifest that fixes a commit or checksum in
+  `finance-infra` must change together with the owner repository, and its CI admission only
+  passes once the owner commit is on `main`.
+
 ## Changing the host itself: batches
 
 Host changes (units, root scripts, identities, state layout) are **batches** ("lotes") with
