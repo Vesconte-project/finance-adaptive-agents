@@ -76,12 +76,22 @@ def test_canonical_skill_catalog_is_safe_and_portable():
         ("openssh-socket-activation-listeners", "openssh-socket-activation-listeners", "active"),
         ("orchestrator-runtime-ops", "orchestrator-runtime-ops", "active"),
         ("organization-resource-authorization", "organization-resource-authorization", "active"),
+        (
+            "postgres-logical-restore-proofs",
+            "postgres-logical-restore-proofs",
+            "active",
+        ),
         ("prefect-self-hosted-operations", "prefect-self-hosted-operations", "active"),
         ("private-research-artifact-access", "private-research-artifact-access", "active"),
         ("privilege-boundaries-ci-runner", "privilege-boundaries-ci-runner", "active"),
         (
             "production-faithful-integration-proofs",
             "production-faithful-integration-proofs",
+            "active",
+        ),
+        (
+            "public-projections-of-confidential-data",
+            "public-projections-of-confidential-data",
             "active",
         ),
         ("research-job-quota-ledger", "research-job-quota-ledger", "active"),

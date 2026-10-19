@@ -60,6 +60,26 @@ e 25 minutos. Por isso:
 
 Preços e planos mudam: confirma-os no momento, com os números de uso reais.
 
+## Quota esgotada a meio de uma operação
+
+Observado a 19/10/2026: depois de dois dias com muitos PRs pequenos de correção,
+cada um a correr a prova pesada completa (incluindo PRs só de documentação), o
+budget do Actions esgotou durante uma janela de manutenção. O sintoma foi um
+workflow que falha **antes de executar qualquer step**, sem mudança no workflow.
+Confirma nas annotations do run e na faturação antes de procurar outra causa.
+
+Se for preciso fazer merge sem CI:
+
+- limita a exceção a uma alteração pequena, revista, com testes locais e a prova
+  relevante corrida fora da CI;
+- regista a exceção no tracker com o SHA, o que foi validado e o que fica
+  pendente; essa alteração é a primeira suspeita se algo falhar;
+- corre a CI no ramo principal quando houver budget e confirma-a verde **antes**
+  de qualquer passo que dependa dos seus artefactos (por exemplo, uma admissão
+  que exige o recibo da prova desse manifesto).
+
+Depois, mede onde foi o consumo (que jobs, em que PRs) antes de mudar o workflow.
+
 ## Quando não aplicar
 
 Um repositório com CI de poucos minutos e poucos pushes não precisa disto.

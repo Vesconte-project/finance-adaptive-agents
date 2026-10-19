@@ -28,6 +28,30 @@ description: Use when implementing Clerk Organization membership, roles and tena
 - No cross-account access even with a valid opaque job/artifact ID. For sensitive jobs, a separately designed private/team-sharing ACL may narrow reading beyond basic organization membership; do not promise it exists without code evidence.
 - Former Pro accounts can see only a **safe basic history** (non-sensitive name/date/status) when otherwise authorized; results and downloads remain subject to current entitlement and retention policy.
 
+## Platform administrators and the first admin
+
+Platform (back-office) administration is a separate authority from organization roles. A
+pattern designed and reviewed on 2026-10-18/19 (not yet observed in use):
+
+- Administrative grants live in PostgreSQL with an expiry, and the **application runtime cannot
+  write them**. A compromised backend or admin account then cannot grant itself more access.
+- Grants are written by a dedicated operator role that holds only the administrative tables. Its
+  login stays `NOLOGIN` with no password; an operation opens it with a random in-memory password,
+  writes the grant, then closes it and terminates its sessions. The protection boundary is root on
+  the host, so harden root access separately.
+- The same path is needed for every later change, not only the first admin: renewals before
+  expiry, extra permissions, new colleagues and urgent revocations. Treat it as a reusable
+  procedure, not a one-off script.
+- **Chicken-and-egg:** a grant needs the internal `users` row, which is only created on the
+  person's first authenticated request to the enabled API. Order: enable the API, the person
+  signs in once through the real client, then the operator grants. Never insert the user by SQL to
+  shortcut this.
+- Make a grant idempotent by a client-chosen grant ID and publish it only after commit. After an
+  interruption, reconcile the database and the audit trail before any retry; never repeat a grant
+  blindly.
+- Check the operator role for rights inherited from retired features (for example a service
+  identity table kept after its feature was removed) and remove them in a new migration.
+
 ## Checks before merge
 
 Test roles and memberships against all GET/POST/export/SSE/download routes, not just frontend menus. Include wrong active organization, guessed ID, admin downgrades, member removal during active SSE, accounts switching personal->org, Stripe plan removal and access to an old result. Prefer query scoping by `account_id` plus resource ID to prevent data leakage.

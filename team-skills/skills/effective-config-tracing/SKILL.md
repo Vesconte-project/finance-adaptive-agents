@@ -107,6 +107,22 @@ autorização como negação de acesso.
   aplicável na unit e nos drop-ins da versão instalada; documenta-a se for
   relevante, ou propõe remover duplicação após confirmar o consumidor.
 
+## Calendário declarado num fuso, efeito noutro
+
+Um timer systemd com fuso explícito (`OnCalendar=Sun *-*-* 02:10:00 Europe/London`)
+num host em UTC dispara a horas UTC diferentes consoante a hora de verão: até à
+mudança arrancava à 01:10 UTC; a partir dela, às 02:10 UTC, dentro de uma janela
+proibida de backups (observado a 18/10/2026). Nada no ficheiro mudou.
+
+- Quando as janelas proibidas estão em UTC, declara os timers em UTC.
+- Confirma o efeito real com `systemctl --no-pager list-timers` à volta das datas
+  de mudança de hora, não só o texto da unit.
+- Compara a hora de arranque **mais a duração máxima medida** com as janelas
+  proibidas, e limita a duração (`RuntimeMaxSec=`) para não entrar nelas.
+- Se o repositório já declara o valor certo e o host divergiu, a correção é
+  reinstalar a unit do repositório. Só o `.timer`, se o `.service` depender de
+  outras mudanças ainda não instaladas.
+
 ## Ficheiro certo, daemon com o valor antigo
 
 Se o ficheiro em disco está certo e o comportamento não mudou, o daemon pode
