@@ -1,6 +1,6 @@
 ---
 name: openssh-socket-activation-listeners
-description: Use when checking or restricting which addresses OpenSSH listens on under systemd socket activation (ssh.socket), when sshd -T and the real listener disagree, or when deciding which sshd_config or sshd_config.d value takes effect before hardening authentication. Not for SSH client configuration or key generation.
+description: Use on hosts with confirmed or suspected systemd socket activation of OpenSSH (ssh.socket) to check listening addresses, investigate disagreement between sshd -T and kernel listeners, or interpret sshd configuration precedence for that socket-activated setup. Not for general sshd hardening without socket activation, SSH clients, or key generation.
 ---
 
 # OpenSSH under socket activation
@@ -20,9 +20,13 @@ On Ubuntu releases where OpenSSH runs by socket activation, the listening socket
 the kernel:
 
 ```text
-ss -tlnp | grep ':22'
-systemctl cat ssh.socket     # plus drop-ins under /etc/systemd/system/ssh.socket.d/
+systemctl cat ssh.socket     # includes applicable drop-ins
+ss -tlnp                    # inspect exact local address and port columns
 ```
+
+Discover all expected ports and address families from the effective socket configuration and
+compare exact kernel endpoints; do not assume port 22 or use substring matching that also
+accepts 2222. An inaccessible process-owner field does not make a listener absent.
 
 Consequences:
 
@@ -36,17 +40,19 @@ Consequences:
 
 ## Which configuration value wins (verified)
 
-In `sshd_config`, **the first obtained value for a keyword wins** — the opposite of many
-configuration systems and of systemd `EnvironmentFile` stacking. Drop-in files count only where
+In `sshd_config`, **most keywords use the first obtained value**, unless their own documentation
+says otherwise. Some accumulate multiple occurrences, including `ListenAddress` and `Port`;
+check the target release's keyword documentation before applying a precedence rule. Drop-in files count only where
 an `Include` line pulls them in, and they are read at that point, in lexical order. On a host
 whose main file starts with `Include /etc/ssh/sshd_config.d/*.conf` (as on the one observed),
 `00-hardening.conf` beats a later `50-cloud-init.conf` that sets `PasswordAuthentication yes`,
 and both beat the main file's own lines after the `Include`. Check where your `Include` sits and
 which files it matches before reasoning about order.
 
-Prefer the effective configuration to reading files: `sshd -T` prints it, but needs root to load
-host keys, so run it only where you are authorised or ask someone who is. It shows the global
-settings; for a `Match` block, pass the connection context, for example
+Use `sshd -T` to inspect effective settings where the installed configuration and file access
+allow it. Required privileges depend on that setup; permission failure is not evidence of the
+settings and does not authorise broader access. Use authorised output supplied by an operator
+when needed. For a `Match` block, pass the connection context, for example
 `sshd -T -C user=<name>,host=<host>,addr=<ip>`.
 
 ## Before disabling password authentication
@@ -54,3 +60,5 @@ settings; for a `Match` block, pass the connection context, for example
 Confirm at least one working key per person or device that needs access, in its own key pair
 with an identifying comment, and keep an existing session open while testing a new login. One
 key per device lets each be revoked alone.
+
+Source checked 2026-10-19: [OpenSSH sshd_config](https://man.openbsd.org/sshd_config), including `Include`, `ListenAddress`, `Port`, and `Match`. This upstream manual does not establish how a distribution generates `ssh.socket`; inspect the installed packaging and effective socket.

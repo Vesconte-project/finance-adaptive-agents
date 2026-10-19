@@ -115,11 +115,11 @@ tentativas, lê [references/destructive-retirement-accounting.md](references/des
 
 ## Dois lotes que tocam no mesmo ficheiro
 
-Uma armadilha possível não é evidente. Um lote declara o baseline do que espera
-encontrar instalado, em hashes fixos. Se dois lotes mexerem no
+Uma implementação errada pode verificar um baseline fixo mas instalar a fonte
+corrente sem confirmar o delta autorizado. Se dois lotes mexerem no
 **mesmo ficheiro instalado** e ambos forem integrados no ramo principal antes de
-qualquer um ser aplicado, o primeiro a aplicar leva a fonte já com as alterações
-do segundo — e o baseline do segundo passa a descrever um estado intermédio que
+qualquer um ser aplicado, esse comportamento instala também as alterações do
+segundo lote — e o baseline do segundo passa a descrever um estado intermédio que
 **nunca existiu**. O segundo recusa, corretamente, e não há nada para corrigir:
 o resultado desejado já está instalado.
 

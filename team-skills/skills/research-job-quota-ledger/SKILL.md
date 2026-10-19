@@ -1,51 +1,90 @@
 ---
 name: research-job-quota-ledger
-description: Use when designing or debugging long-running paid research jobs, quota reservations, concurrency, cancellations, retries or degraded billing; preserve exactly-once accounting despite duplicate requests and worker restarts.
+description: Use when designing or debugging transactional quota reservation and settlement for paid research comparison jobs, including duplicate admission, partial results and cancellation races; not for generic worker concurrency or subscription billing alone.
 ---
 
 # A queued job is a reserved obligation
 
-**Scope:** research comparisons that run **two AI models** and consume one included subscription unit **only after both results are valid and durably available**. This is the agreed **product target**, not evidence about installed job infrastructure.
+Confirm the product's settlement contract before implementation: what constitutes a valid
+result, how many units are reserved/consumed, whether partial work is billable, and how
+cancellation and entitlement changes affect accepted work. A two-model comparison consuming
+one unit only when both outputs are durable is a useful **conditional example**, not an
+agreed target for every product. Historical Finance fixtures are optional in
+[references/finance-settlement-example.md](references/finance-settlement-example.md).
+
+Identify the actual identity provider, authorization boundary, persistence layer and its
+transaction/isolation guarantees. Clerk, FastAPI and PostgreSQL are implementation examples;
+do not introduce them into an existing system merely to use this method.
 
 ## Atomic admission
 
-1. Authenticate the Clerk principal in FastAPI; resolve the authoritative internal `account_id`, current membership/permission and entitled feature.
-2. In **one PostgreSQL transaction**, check the applicable billing period and remaining included units, storage headroom, policy-based concurrency and an account-scoped idempotency key. Reserve one comparison unit and an estimated storage ceiling; persist the eligible job atomically. Persist outbox records in that transaction **when distinct business events or a broker publisher actually require them**; research discovery via PostgreSQL pull does not require a duplicate broker message.
-3. The dispatch transport is replaceable: PostgreSQL + HTTPS pull may acquire an authorized lease directly; a broker consumer may receive a job reference and then claim it at FastAPI. Neither path transports Clerk session tokens or grants authorization by possession of the reference. Preserve idempotent leases, generation fencing and settlement across duplicate deliveries. For acquisition/transport migration, use the separate `research-dispatch-transport-boundary` Skill.
-4. Workers acquire execution capacity on demand and record both model outcomes. Persist validated results before marking successful and settling a unit. Reconcile abandoned reservations and completed-but-unsettled jobs.
+1. Authenticate the principal; resolve authoritative account/tenant, current permission and
+   required feature grant. Possession of a job ID, membership alone or a frontend plan claim
+   does not authorize submission or access. Derive cancellation authority from the target's
+   explicit action/resource policy, not a role name.
+2. In one transaction supported by the actual store, check the applicable billing period,
+   remaining units, storage headroom and concurrency policy. Apply an account-scoped
+   idempotency key, reserve the policy-defined quantity, and persist the eligible job
+   atomically. Enforce uniqueness/locking or equivalent database guarantees; an application
+   precheck followed by independent writes is not atomic admission. If cross-store writes
+   prevent this, design explicit consistency/recovery semantics before claiming equivalence.
+3. Dispatch only references or authorized grants, never user session tokens. The execution
+   authority must issue leases, fence every mutation by generation/token and reject stale
+   completion. Transport receipt is not authority or successful settlement. For PostgreSQL
+   pull, a committed eligible job is discoverable; a broker/outgoing business event may
+   require a transactional outbox. Neither is assumed present.
+4. Persist validated results before the terminal success/settlement decision. Make that
+   decision transactional and idempotent; reconcile abandoned reservations and completed
+   but unsettled jobs. Keep execution attempts distinct from a single billable job.
 
 ## Settlement state machine
 
-- `succeeded` **with both model outputs validated and stored** -> consume **one** unit once.
-- Definitive failure or cancellation **before** a complete durable result -> release **all** reserved comparison quota, even if a model cost money internally; clean partial outputs according to retention policy.
-- If complete result exists but browser delivery fails, it remains a successful consumed unit.
-- Repeated cancel/settle requests are idempotent. A completed job cannot be retroactively cancelled.
-- Cancellation in progress is cooperative; do not refund until the terminal outcome is determined. Require the submitter or authorized org admin; apply the account authorization Skill.
-- Track actual computation cost separately from the included-unit ledger for margins/abuse. Stripe usage meters, if added later, report settled usage; they must not serve as immediate concurrency/quota locks.
+Write the state table for the confirmed product contract. For the **selected two-model,
+one-unit example** only:
 
-## Protecting capacity without punishing legitimate users
+- Both required outputs valid and durably stored: consume one reserved unit once.
+- Definitive failure or cancellation before the complete durable result: release the whole
+  reservation, even if internal compute cost was incurred; clean partial outputs under the
+  authorized retention policy.
+- Complete durable result but failed browser delivery: settlement remains successful.
 
-Use per-account and per-user quotas, concurrency, admission queues, worker timeouts, retry budgets and rate limits. A burst of cancellations is not itself a reason to block existing-job cancellation. Count distinct effectively cancelled jobs, not repeated API calls.
+In any contract, repeated cancellation/settlement must not double consume or release.
+Resolve races between cancellation and completion against durable state; a request to cancel
+is not a terminal outcome. A completed job cannot simply be retroactively cancelled to
+refund usage. Record refunds/adjustments as explicit ledger operations if supported.
+Track compute cost separately from included units. Stripe usage reporting, if present, is a
+separate downstream concern, not an immediate quota or concurrency lock.
 
-**Local-only test fixtures, never production defaults:** 20 comparisons per monthly billing period, 2 simultaneous jobs, 250 MB aggregate per comparison (both models), 5 GB account storage, 10 effective cancellations per rolling hour. On reaching the cancellation threshold, temporarily block **new** submissions while continuing cancellation/read/download. Production numbers require measured cost, size and abuse patterns.
+## Capacity and degraded billing
 
-For **local degraded-billing exercises**, the agreed fixture is: verified failure >15 min -> at most 1 concurrent job/account, stop accepting new paid jobs after 60 min since last verified commercial sync; accepted jobs may finish; never waive usage/storage quotas or assume an expired right remains valid.
+Use the product's own concurrency, timeout, retry and abuse policy. Repeated API calls to
+cancel the same job are not distinct cancelled jobs. Do not prevent legitimate cancellation
+merely to throttle new admissions. Set degraded-mode thresholds from authorized risk policy,
+not silence from webhooks; state how stale grants and already reserved work are handled.
 
-## Tests that must fail unsafe implementations
+## Exercises
 
-- 50 simultaneous submissions with only one unit left -> one successful reservation.
-- Same idempotency key retried, worker redelivery, crash after model 1, crash after both results, repeated cancellation, split-brain worker lease, monthly period boundary.
-- Account has 4.8 GB stored with 250 MB reservation under 5 GB cap -> new job denied.
-- Artifacts exceed a reserved ceiling -> fail and release unit, clean partial objects; prove no storage race between simultaneous jobs.
-- Worker stopped/restarted; a committed job is not dispatched after a lost wakeup; broker outbox not published when a broker is configured; per-account degradation; subscription revoked after job acceptance.
+Use local fixtures or an authorized isolated environment with the chosen policy:
 
-Stop before performing paid external model calls, touching a real queue, or cancelling live jobs without explicit authorization.
+- Concurrent submissions with one unit left: at most one successful unit reservation.
+- Same idempotency key, worker redelivery, crash after partial output, crash after all output
+  persistence, duplicate terminal events, cancellation/completion race and stale worker.
+- Billing-period boundary: settlement/abandonment applies to the correct reserved period.
+- Near-full storage plus concurrent reservations; output exceeds reservation; partial object
+  cleanup failure. Expected charging follows the selected product contract.
+- Lost dispatch wakeup, restart, unpublished outbox where configured and entitlement revoked
+  after admission. Acknowledgment must not erase the durable obligation or bypass its policy.
 
-## Sources to re-check
+Companion skills `research-dispatch-transport-boundary` and
+`organization-resource-authorization` are optional additional context if installed; the
+minimum authorization, lease and accounting invariants above stand on their own.
+Stop before paid external model calls, real queues or live job cancellation without explicit
+authorization. Fixtures do not prove actual database isolation or model-cost behavior.
 
-- https://www.postgresql.org/docs/current/explicit-locking.html
+## Sources to re-check for the selected implementation
+
 - https://www.postgresql.org/docs/16/sql-select.html
-- https://docs.celeryq.dev/en/v5.6.3/userguide/configuration.html
+- https://www.postgresql.org/docs/current/explicit-locking.html
 - https://docs.stripe.com/billing/subscriptions/usage-based/recording-usage-api
 
-Operational choices require tests against the actual transport (including broker if configured), database isolation level, worker version and two real models.
+PostgreSQL locking documentation rechecked 2026-10-19; verify actual store/transport versions.

@@ -1,40 +1,67 @@
 ---
 name: private-research-artifact-access
-description: Use when implementing authorization, private S3-compatible downloads, storage reservations, retention and deletion of paid research results or artifacts after downgrade or account cancellation.
+description: Use when implementing authorization, private S3-compatible downloads, storage reservations, retention and deletion for paid research results or artifacts.
 ---
 
 # Artifact possession must not bypass account authorization
 
-**Scope:** research outputs in private object storage, including signed downloads, retention and data lifecycle. These are proposed target policies (2026-10-10), **not evidence that production buckets or retention jobs are configured**.
+Establish the actual backend, principal/account model, artifact types, feature grants,
+charging rules and retention requirements. FastAPI and a plan named Pro are examples,
+not prerequisites. Do not infer retention or billing policy from the storage provider.
 
 ## Download boundary
 
-1. FastAPI authenticates the principal, resolves `account_id`, and checks current membership, current feature access, job ownership/account scope, artifact status and retention deadline **before each issuance**.
-2. Use private buckets, opaque object keys scoped to account/job, and single-object `GET` pre-signed URLs with **60-second issuance TTL** for ordinary downloads. Do not store signed URLs in persistent records, analytics, browser-visible public caches or logs.
-3. No new URL after access is revoked. An **already issued** bearer URL may remain usable until expiry; a transfer started before expiry may finish. Never promise instant revocation of existing links. For high-sensitivity content requiring verification on each request, use an authenticated streaming/proxy design and account for its resource cost.
-4. A pre-signed URL's validity is not proof of entitlement; the decision is made during issuance. Verify actual S3-compatible provider semantics and signature limits before promising AWS-specific behavior.
+1. Before each URL issuance, authenticate and resolve the principal/account; check current
+   resource authorization, membership where relevant, feature access, artifact status and
+   retention deadline. A valid artifact ID is not authority.
+2. Keep protected objects private. Use account/job-scoped opaque keys and a single-object
+   `GET` pre-signed URL, with an expiry selected for sensitivity, file size and client retry
+   needs. A **60-second TTL** is an illustrative starting point requiring target selection,
+   not an automatic requirement. Do not persist signed URLs in records, analytics, public
+   caches or logs.
+3. Revocation prevents new issuance. An already issued bearer URL may remain usable until
+   expiry, and an already started download may finish. For per-request verification, consider
+   authenticated streaming/proxying and its cost; design termination of ongoing transfers
+   separately if required.
+4. Verify the actual S3-compatible provider's credential, signature and expiry semantics.
+   AWS behavior is not a guarantee for every provider. URL validity does not prove entitlement.
 
 ## Storage and retention
 
-- Reserve storage capacity transactionally at job admission alongside usage. On completion, settle to measured bytes and release unused reservations; cleanup of failed jobs must remove partial objects and orphaned multipart uploads.
-- **Local test fixture only:** 250 MB combined for both models and 5 GB stored per account. Exceeding the per-job test ceiling means no successful comparison/unit charge; garbage-collect partial objects. Production thresholds are **not** established.
-- Proposed paid product retention: keep successful premium outputs while entitlement is active **subject to quotas and deletion requirements**; after loss of Pro, block premium result/URL access and retain for **90 days** after effective paid access ends, then delete. If Pro is restored before deletion, grant access only after reauthorization.
-- Basic history may remain independently (safe job label/date/status), but exclude prompts, private names, premium findings and signed object URLs. Define actual history retention/privacy separately.
-- Deletion must cover object store, metadata, cached renders, expired multipart uploads and backups according to documented recovery/erasure windows. Enterprise contracts and legal obligations may override product defaults; do not make irreversible bucket retention changes without authorization.
+- Where storage quotas apply, reserve capacity transactionally at admission, settle to
+  measured bytes and release unused reservations. Reconcile failed-job partial objects and
+  orphaned multipart uploads under an authorized cleanup policy.
+- Obtain explicit decisions for retention while entitled, retention after downgrade,
+  restoration before deletion, and metadata/history retention. No period or tier is implied.
+  Exceeding a storage ceiling does not by itself define whether work is billable: apply the
+  confirmed charging and settlement policy.
+- Any remaining basic history must be reviewed for disclosure: even a job label may contain
+  private information. Exclude prompts, findings, private names and signed URLs unless the
+  applicable authorization and retention policy permits them.
+- Map deletion across objects, metadata, cached renders, multipart uploads and backup recovery
+  windows. Record legal/contractual constraints; do not silently translate a product retention
+  period into irreversible bucket locks or promise instant erasure from backups.
 
-## Events and ownership
+For the originating Finance design only, optional [policy examples](references/finance-policy-examples.md)
+record numerical fixtures and proposed paid retention. Use them only if explicitly selected
+or confirmed in that product's requirements.
 
-Read/list/status/SSE/download endpoints reauthorize `account_id` and resource on each request or reconnect. Never broadcast artifact keys or user-specific data in global events. Joining an organization or possessing a job ID does not override read restrictions or billing entitlement.
+## Events and checks
 
-## Tests
+Read/list/status/SSE/download endpoints authorize account and resource on each request or
+reconnect; long-lived streams need a revocation policy. Never globally broadcast private
+keys or account data. Joining an organization does not override a restricted artifact ACL.
 
-- User from another account tries artifact ID; former org member; downgrades Pro; URL re-issuance after revocation; old signed URL before/after expiry; started download during TTL; large partial output overflow; two concurrent reservations near account limit; restore Pro on day 89 vs deletion after day 90; GDPR or contractual deletion workflow.
-- If bucket public-access, lifecycle settings, actual retention rules or backend authentication cannot be verified, report **unknown** and stop before changing access/retention.
+Exercise cross-account IDs, former members, entitlement loss, URL re-issuance, existing URL
+expiry and a transfer begun before expiry, simultaneous reservations near capacity,
+oversized partial output, restoration before deletion and an authorized deletion workflow.
+Use local fixtures or an explicitly authorized isolated environment. Unknown public-access,
+retention or lifecycle settings remain unknown; stop before changing them without evidence
+and authorization.
 
-## Sources to re-check
+## Sources
 
 - https://docs.aws.amazon.com/AmazonS3/latest/userguide/using-presigned-url.html
 - https://developers.cloudflare.com/r2/api/s3/presigned-urls/
-- https://clerk.com/docs/guides/organizations/overview
 
-Vendor and architecture references reviewed 2026-10-10; AWS behavior must not be assumed identical for every S3-compatible provider.
+Provider URL semantics rechecked 2026-10-19; deployment behavior still needs verification.

@@ -49,22 +49,32 @@ retomar antes de dividir a operação.
 2. Confirma a plataforma, filesystem/volume, ferramenta de cópia, proprietários,
   permissões e autorização do operador. Determina se os consumidores precisam
   de ser parados ou podem ser sincronizados por snapshot/replicação suportados.
-3. No mesmo filesystem, `rename(2)` pode fornecer um cutover atómico quando
-  origem, destino e aplicação o permitem. Entre filesystems/volumes, copia os
-  dados preservando os metadados necessários, mantém a origem intacta e
-  verifica a cópia por conteúdo e inventário antes do cutover. Não assumas que
-  copiar é inseguro nem apagues a origem como parte da cópia inicial.
-4. Se necessário e suportado, mantém um symlink de compatibilidade apenas após
-  verificar que o serviço pode usá-lo e que o caminho não expõe dados.
-5. Para dados mutáveis, quiesce os escritores ou faz uma sincronização final
-  consistente segundo a aplicação; repete a verificação de conteúdo. Não
+3. Escolhe o método, sem executar o cutover nesta fase. No mesmo filesystem,
+  `rename(2)` pode ser uma opção atómica se origem, destino e aplicação o
+  permitirem; não garante por si só consistência nem recuperação. Entre
+  filesystems/volumes, planeia a cópia com os metadados necessários e a
+  verificação por conteúdo e inventário. Uma cópia inicial autorizada preserva
+  a origem; não a apagues nem redireciones consumidores neste passo.
+4. Planeia um symlink de compatibilidade apenas se necessário e suportado,
+  após verificar que o serviço pode usá-lo e que o caminho não expõe dados.
+  A sua instalação ou alteração faz parte do cutover, não do planeamento.
+5. Antes de parar escritores ou dar outro passo disruptivo, regista plano,
+  inventário, configuração anterior e checkpoints de recuperação no mecanismo
+  de auditoria disponível; um receipt estruturado é opcional. Confirma a
+  autorização para essa coordenação e para o cutover. Se faltar, para no
+  planeamento ou na cópia inicial segura já autorizada.
+6. Executa a preparação de dados prevista: para dados mutáveis, quiesce os
+  escritores ou faz uma sincronização final consistente segundo a aplicação;
+  verifica o conteúdo e inventário da cópia ou snapshot quando usados. Não
   compares device/inode entre filesystems; compara caminhos relativos, hashes,
-  tamanhos e metadados que a migração deve preservar.
-6. Efetua o cutover apenas com autorização. Mantém a origem recuperável até o
-  destino e o consumidor estarem validados durante a janela definida.
-7. Regista plano, inventário, configuração anterior e checkpoints antes de
-  qualquer passo disruptivo, no mecanismo de auditoria disponível; um receipt
-  estruturado é opcional e depende do workflow.
+  tamanhos e metadados que a migração deve preservar. Para um rename sem cópia,
+  valida a origem e o plano de recuperação. Confirma os pré-requisitos antes
+  de avançar; uma verificação falhada não autoriza o cutover.
+7. Só então executa o cutover escolhido, incluindo `rename` ou mudança de
+  symlink/configuração, e valida o consumidor. Mantém a origem ou um mecanismo
+  de recuperação consistente até terminar a janela definida. Para `rename`,
+  documenta o caminho renomeado e a recuperação, sem presumir uma segunda
+  cópia no caminho antigo.
 
 Se o cutover falhar, repõe a configuração anterior somente se isso continuar
 consistente com as escritas feitas desde o cutover. Se houver dados novos no
@@ -99,7 +109,8 @@ um engine para outro. Trata uma mudança de volume como uma migração separada:
 ## Depois de mover
 
 - Os backups têm de incluir os caminhos novos, e o teste de restauro tem de
-  correr **depois** da migração; o anterior já não prova nada.
+  correr **depois** da migração; o anterior continua a ser evidência histórica,
+  mas não valida os caminhos e a configuração migrados.
 - Confirma que programas de backup e recuperação executam código revisto a
   partir de uma localização controlada; root-owned é uma opção conforme a
   plataforma e o modelo de ameaça.

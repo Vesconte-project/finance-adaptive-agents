@@ -1,17 +1,38 @@
 ---
 name: research-dispatch-transport-boundary
-description: Use when designing, migrating, or reviewing research-job dispatch using PostgreSQL HTTPS pull, RabbitMQ/Celery, or managed queues while preserving FastAPI leases, fencing, quotas, and worker portability.
+description: Use when designing or migrating research-job dispatch in a system with an existing or explicitly chosen PostgreSQL/FastAPI lease authority; compare HTTPS pull and broker delivery while preserving fencing and worker portability.
 ---
 
 # Research dispatch is a replaceable delivery mechanism
 
-Use for Vesconte research-job **delivery, acquisition, remote workers, and transport migration**. For quota reservation, settlement, and billing, use `research-job-quota-ledger`; for Prefect **data pipelines**, use `prefect-self-hosted-operations`. This Skill records a **reviewed architectural recommendation requested on 2026-10-11**, not proof of production rollout, organizational Acceptance, successful model execution, or measured scale.
+Use for research-job delivery, acquisition, remote workers and transport migration.
+First verify that the target system already has, or the user explicitly selected,
+PostgreSQL durable job state and an authenticated FastAPI lease authority. Locate its
+actual schema, isolation level, claim/recovery paths and worker protocol. Do not impose
+this stack or a migration merely because the task mentions a queue. If the prerequisite
+is absent, report the mismatch and evaluate the actual architecture separately.
 
-## Architecture decision: keep stable the things that matter
+Quota settlement and account authorization are outside the transport decision; preserve
+the existing policy. The minimum invariant is atomic accepted work/reservation state,
+resource-scoped authorization and one idempotent settlement per job; delivery or ACK alone
+cannot authorize work or charge it. `research-job-quota-ledger` and
+`prefect-self-hosted-operations` are optional extra context if present, not prerequisites.
+This package does not configure data-pipeline orchestration or define a commercial plan.
 
-**Recommended initial dispatch:** PostgreSQL 16 job-state queries through a FastAPI HTTPS `AcquireWork` / `claim-next` endpoint. Workers pull when they have capacity; the API atomically selects eligible work and issues a lease. `LISTEN/NOTIFY` may improve wake-up latency but is never a durable queue. Run commercial reconciliation and maintenance from durable PostgreSQL work records using independent backend workers.
+## Candidate architecture: preserve the authority
 
-**Permanent contract:** PostgreSQL owns job lifecycle, quota reservations, attempts, lease generation/fencing, and results; FastAPI authenticates workers and arbitrates every claim, heartbeat, event, result, cancellation and terminal transition; model executors know none of PostgreSQL, Celery, AMQP, SQS or Cloudflare Queues. The transport only discovers/delivers **job references or already-authorized work grants**. Do not promise a universal plug-compatible adapter: pull and broker modes differ in claim, redelivery and acknowledgment semantics.
+For that verified stack, evaluate PostgreSQL eligible-job queries behind an authenticated
+HTTPS `AcquireWork` / `claim-next` endpoint. Workers pull with available capacity; the API
+atomically issues a lease. Compare it against retaining a broker using measured delivery
+requirements and operating cost. PostgreSQL 16 is the reference version, not an upgrade
+instruction. `LISTEN/NOTIFY` may reduce wake-up latency, never replace durable work records.
+
+In this design PostgreSQL owns lifecycle, reservations, attempts, fencing and results;
+FastAPI arbitrates claims, heartbeat, events, cancellation and terminal transitions. Adapt
+to the verified existing authority rather than inventing a second state machine. Keep
+model executors separate from transport SDKs. A transport delivers job references or
+already authorized grants; pull and broker modes have different claim/redelivery/ACK
+semantics and are not universal plug-compatible adapters.
 
 ## Boundaries not to blur
 
@@ -23,6 +44,9 @@ Use for Vesconte research-job **delivery, acquisition, remote workers, and trans
 
 ## How to apply
 
-Read [references/postgres-https-pull.md](references/postgres-https-pull.md) before implementing claim, long-poll or recovery. Read [references/migration-and-choice.md](references/migration-and-choice.md) when removing RabbitMQ/Celery or considering Prefect, Hatchet, SQS or Cloudflare Queues. Read [references/evidence.md](references/evidence.md) for the exact repository facts, versioned provider evidence, unverified assumptions and refresh triggers.
+Read [references/postgres-https-pull.md](references/postgres-https-pull.md) before implementing claim, long-poll or recovery. Read [references/migration-and-choice.md](references/migration-and-choice.md) when removing RabbitMQ/Celery or considering Prefect, Hatchet, SQS or Cloudflare Queues. The optional [historical Finance evidence](references/evidence.md) records the source
+decision and its limits; read it only for that context. Repository names, host estimates,
+commercial tasks and two-model execution there are not generic requirements.
 
-**Stop** before modifying queues, services, database schema, credentials, production dispatch or live jobs without the relevant environment owner's authorization and any repository governance admission. A clean Git diff or synthetic fixture is not end-to-end validation. Verify two real-model execution and failure recovery before claiming the architecture is operational.
+**Stop** before modifying queues, services, database schema, credentials, production dispatch or live jobs without the relevant environment owner's authorization and any repository governance admission. A clean Git diff or synthetic fixture is not end-to-end validation. Verify the actual executor stages and failure recovery before claiming operation; paid
+model calls or production tests require their own authorization.

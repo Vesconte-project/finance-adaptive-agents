@@ -1,5 +1,8 @@
 # PostgreSQL + HTTPS pull: protocol and failure checklist
 
+Use only after confirming the PostgreSQL/FastAPI authority and actual transaction semantics.
+Endpoint names are example contracts, not evidence that the target implements them.
+
 ## One atomic acquisition; no long transaction while idle
 
 1. Authenticate the **service** identity at the FastAPI boundary. Verify environment, permitted pool/capability and client rate/concurrency; do not trust worker-declared account, plan or arbitrary resource fields.
@@ -20,7 +23,7 @@
 | Claim transaction commits, HTTP response lost | Lease expires; job becomes eligible again; never erase from DB |
 | Two workers claim concurrently | At most one active grant/generation for a job |
 | Claim timeout/cancel during long-poll | No orphan DB transaction or occupied pool slot |
-| Worker dies after model one | Lease recovery, idempotent artifact writes, no double quota charge |
+| Worker dies after a partial execution stage | Lease recovery, idempotent artifact writes, no double quota charge |
 | Old worker completes after fencing | Reject generation/token, including events and variants |
 | Backend or Tunnel is offline | Workers back off; durable jobs stay in PostgreSQL |
 | PostgreSQL restart | No accepted job lost; abandoned leases recover on restart |
@@ -33,9 +36,15 @@ Use short transactions, indexed eligibility scans, bounded page size and account
 
 ## Operational acceptance
 
-Measure p50/p95/p99 time from eligible to granted; duplicate attempt rate; leases expired; failed heartbeats; backlog age; DB CPU, locks, dead tuples, autovacuum lag, WAL, pool occupancy; worker slot utilization and concurrent long-polls. Test with the real schema, 2 model subprocesses, representative inputs, constrained memory, backup overlap, network interruptions and a remote worker with **outbound HTTPS only**.
+Measure p50/p95/p99 time from eligible to granted; duplicate attempt rate; leases expired; failed heartbeats; backlog age; DB CPU, locks, dead tuples, autovacuum lag, WAL, pool occupancy; worker slot utilization and concurrent long-polls. Test in an authorized isolated environment with the actual schema and executor stages,
+representative inputs and network interruptions. Include constrained memory, backup overlap
+and outbound-only remote workers where relevant to that topology; do not introduce those
+constraints into an unrelated system. Real paid calls need explicit authorization.
 
-A suggested engineering *review trigger* (not a DB limit or approved SLO) is persistent >1 job/s, >100 concurrent waits or p95 dispatch >5s with workers actually available. Reassess when measurements justify it; 30 machines alone is **not** a transport migration trigger.
+Choose review thresholds from the application's measured baseline and approved SLOs. The
+source proposal used >1 job/s, >100 concurrent waits or p95 dispatch >5s as illustrative
+review triggers only, not database limits or defaults. Machine count alone is not a
+transport migration trigger.
 
 ## Sources (version-aware; re-check)
 

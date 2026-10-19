@@ -11,8 +11,8 @@ not make obvious and that produced real incidents.
 
 **It authorises nothing.** Restarting a worker or the server, republishing deployments, changing
 schedules, job variables or environments, rotating credentials, and touching production data
-each need the user's explicit authorisation and the workspace's own change procedure. Without
-them, diagnose and propose; do not act.
+must be covered by the user's authorisation and the workspace's own change procedure. Existing
+authorisation suffices within its scope; obtain it only when missing. Otherwise diagnose and propose.
 
 **Evidence scope.** Prefect server 3.7.x with workers on 3.8.x, two work pools, `git_clone` pull
 steps over SSH, 2026-08 → 09. Re-check version-sensitive API behaviour on other versions.
@@ -21,8 +21,8 @@ steps over SSH, 2026-08 → 09. Re-check version-sensitive API behaviour on othe
 
 - A run can be `CRASHED` with `total_run_time=0` **after** real work happened: the worker
   submitted it, ran the pull step, `git clone` failed (exit 128), Prefect retried the clone once,
-  and the flow code never started. Zero run time means "the flow never began", not "nothing was
-  attempted".
+  and the flow code never started. Zero run time is consistent with a flow that never began, but does not prove it: correlate
+  state history, infrastructure/worker logs and flow-side evidence. It never proves nothing was attempted.
 - The short failure summary can hide the decisive detail. In one incident three identical
   summaries omitted the repository URL; the full log message (`/api/logs/filter` for the run)
   showed the pull step pointing at the wrong owner and host. Read the complete message before
@@ -47,11 +47,21 @@ steps over SSH, 2026-08 → 09. Re-check version-sensitive API behaviour on othe
 
 ## Deployment job variables are a hidden configuration layer
 
-Job variables stored on a deployment override the worker's own environment (for example the
-systemd unit's `EnvironmentFile`) and are persisted in the orchestrator's database — including
-any secret placed there. Keep runtime configuration and credentials in the worker's environment;
-keep job variables for non-secret per-deployment parameters, version them in `prefect.yaml`, and
-rotate anything that was ever stored there.
+Deployment job variables are persisted configuration, potentially including plaintext secrets.
+For process workers, inspect the actual work-pool base job template, deployment and per-run
+overrides, worker version, and subprocess environment construction: a conflicting `env` entry
+may override an inherited worker value, but neither inheritance nor precedence is universal.
+Use a disposable non-secret sentinel to verify which source reaches the flow; variable presence
+in the worker alone does not prove the child consumed it.
+
+Version ordinary per-deployment configuration where appropriate. Use the workspace's approved
+secret injection (for example a runtime secret store or service credential mechanism supported
+by the application), with access limited to the intended process. Do not assume the worker's
+environment is always the right or safer destination. Check whether publication resolves a
+reference to plaintext in API-visible configuration; assess access and rotate credentials where
+unauthorised exposure occurred or cannot be excluded. Avoid broad API/log/environment dumps.
+
+Reference checked 2026-10-19: [Prefect job variables](https://docs.prefect.io/v3/how-to-guides/deployments/customize-job-variables). It documents overrides and publication-time environment templating; verify the installed template rather than assuming it.
 
 ## Parent flows and child deployments
 

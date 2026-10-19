@@ -34,16 +34,23 @@ irrelevante para a decisão:
 - **Forma dos dados:** dados sintéticos com a mesma forma que o código vai
   encontrar (histórico suficiente, todas as combinações que produção tem).
   Nunca dados reais de utilizadores.
-- **Versões e identidades:** imagens fixadas por digest; processos não-root
-  como em produção.
+- **Versões e identidades:** versão/digest real, entrypoint, UID/GID, roles e
+  privilégios efetivos em cada salto. Não pressuponhas root nem non-root;
+  reproduz as propriedades relevantes num ambiente de prova autorizado, sem
+  copiar credenciais reais nem conceder privilégios fora desse âmbito.
 
 ## Método
 
-1. **Levanta a topologia de produção só em leitura**, com metadados e sem
-   segredos: como os processos se ligam, regras de acesso, formatos.
-2. **Versiona essa descrição** junto da prova (por exemplo, uma cópia
-   sanitizada das regras de acesso) e trata divergências como alterações
-   revistas.
+1. **Obtém a descrição de produção.** Quando o acesso ao alvo já estiver
+   autorizado e as ferramentas estiverem disponíveis, recolhe só os metadados
+   necessários, em leitura e sem segredos: ligações, regras de acesso e
+   formatos. A capacidade de ler não concede autorização. Sem esse acesso, usa
+   descrições sanitizadas fornecidas pelo utilizador ou evidência existente;
+   explicita as dimensões não verificadas e limita a conclusão.
+2. **Guarda a descrição sanitizada** junto da prova apenas se houver destino
+   apropriado e escrita autorizada no projeto; trata divergências como
+   alterações revistas. Caso contrário, apresenta-a como resultado da análise
+   com a sua origem e limitações, sem criar ficheiros no projeto.
 3. **Faz a prova afirmar a topologia**, não só o resultado: verifica, por
    exemplo, que o endereço de cliente visto pelo servidor é o esperado. Uma
    prova que reproduz a topologia por acaso deixa de a reproduzir em silêncio.
@@ -65,7 +72,7 @@ Se a decisão não depender do ambiente (lógica pura, parsing, cálculos), um
 teste unitário chega. O custo de reproduzir produção justifica-se quando a
 conclusão autoriza ou bloqueia uma alteração real.
 
-## Relacionadas
+## Relacionadas (leitura opcional, se disponíveis)
 
 - `verify-against-the-host`: confrontar uma proposta com o estado instalado.
 - `stateful-service-migrations`: quando o estado de partida faz parte do risco.

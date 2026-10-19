@@ -4,13 +4,21 @@
 
 "Worker `ONLINE`" can be a stale record from before the restart, and so can a heartbeat: the old
 process may heartbeat after activation begins but before it is stopped. Tie the evidence to the
-restart itself — record the time the service manager reports the new process started (and its
-PID), then require the exact worker name to report a `last_heartbeat_time` **later than that
-start**. Only that proves the new process connected.
+restart itself — record the new PID with start time, service invocation, intended release, and
+worker identifier. Require a fresh heartbeat from a unique identity bound to that instance.
+A reused worker name with a later timestamp is insufficient: another process can emit it.
+If a unique identifier is unavailable, corroborate the new invocation's connection logs and
+release evidence, and establish that prior/concurrent instances cannot heartbeat under that
+name. Without those links, report readiness unverified. A ready worker still does not prove a
+flow executed the intended Git commit.
 
 ## Which runs a restart affects
 
-- Restarting a worker kills the flow processes it runs.
+- A worker restart may terminate its flow processes. Inspect launch method, process ownership,
+  process groups/cgroups, service-manager termination settings (including systemd `KillMode=`
+  where applicable), and the installed worker shutdown behaviour. A detached or independently
+  supervised flow may survive, but do not rely on that without evidence. Protect all potentially
+  affected runs and verify their post-change state rather than assuming survival or termination.
 - Restarting the Prefect **server** takes the API away from every pool: running flows cannot
   report state or logs, and workers cannot submit scheduled runs. Whether an active flow process
   survives that depends on the deployment, so treat it as a control-plane availability risk and
@@ -43,6 +51,11 @@ unreachable" its own, earlier signal.
 
 ## Client and server versions
 
-Workers on a newer Prefect client than the server work, with a warning in the server log. Treat
-it as an unmeasured risk: pick one reference version, and whenever either side upgrades, verify
-deployment publication, heartbeats, and one run per pool.
+In the recorded 2026-08 → 09 deployment, server 3.7.x and workers 3.8.x operated with a
+warning in the server log. This is one bounded observation, not a compatibility guarantee.
+Prefer a documented supported combination; verify publication, fresh instance-bound heartbeats,
+API operations used by the release gate, and one representative run per pool whenever either
+side changes. Record exact versions and unverified operations; newer clients are not assumed
+compatible with older servers.
+
+For systemd-managed workers, consult the installed [systemd.kill](https://www.freedesktop.org/software/systemd/man/latest/systemd.kill.html) documentation for cgroup termination modes (upstream reference checked 2026-10-19); this does not establish the installed Prefect worker's shutdown behaviour.

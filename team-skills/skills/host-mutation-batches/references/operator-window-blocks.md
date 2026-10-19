@@ -1,87 +1,111 @@
 # Blocos de janela executados por um operador
 
-Quando o lote não é um script com `stage`/`plan`/`apply`, mas uma sequência de
-blocos que um operador humano cola numa janela aprovada, as mesmas
-propriedades têm de viver dentro de cada bloco. Aprendido em janelas de
-backups e de migrações de schema num host único com deploys automáticos.
+Quando o workflow aprovado usa blocos que um operador cola numa janela, em vez
+de um script com `stage`/`plan`/`apply`, cada bloco conserva o contrato de fonte,
+alvo, pré-condições, evidência e recuperação. Descobre primeiro plataforma,
+identidades, serviços, scheduler, armazenamento e procedimento de aprovação.
+
+Os exemplos abaixo vêm de janelas de backups e schema num host Linux único,
+com deploy automático; não exigem essa infraestrutura noutros ambientes.
+Os relatos de helpers de 18–19/10/2026 são aprendizagens locais, não prova
+independente de segurança de outro host.
 
 ## Preparar separado de instalar
 
-- A preparação é um passo próprio, antes da janela, que **não instala nada**:
-  cria uma release root-owned e só de leitura a partir do merge commit (não do
-  commit do PR), compara byte a byte os ficheiros com o commit revisto, valida
-  o manifesto sem ligar à base, e sela. Recusa se o destino já existir.
-- Um helper que corre como root é copiado para um diretório root `0700`, e o
-  checksum é validado antes de o executar. Nunca executes como root a partir
-  de um checkout de outro utilizador.
-- Se a preparação falhar, não a repitas às cegas: guarda o output, vê o que
-  ficou para trás e só depois decide.
+- Prepara antes da janela sem instalar no alvo: identifica a fonte imutável
+  aprovada, verifica origem, integridade e âmbito e protege-a contra alteração
+  por identidades fora da cadeia de confiança. No workflow observado, era uma
+  release root-owned só de leitura do merge commit, comparada byte a byte com
+  o conteúdo revisto e selada. Outros workflows podem usar artefactos assinados;
+  não se exige merge commit quando Git/merge não faz parte do processo.
+- Executáveis privilegiados e seus ancestrais têm de estar protegidos contra
+  substituição. No exemplo root, um helper era copiado para um diretório root
+  `0700` e o digest validado antes de executar. Escolhe identidade/permissões
+  equivalentes no alvo; propriedade root sozinha não prova integridade.
+- Valida manifestos sem contactar a base quando a validação é só estrutural;
+  sondas de acesso reais são passos separados cobertos pela autorização.
+- Recusa colisões com um destino de preparação já existente sem o validar.
+  Se falhar, preserva a evidência e reconcilia o estado parcial antes de repetir.
 
 ## Cada bloco protege-se a si próprio
 
-- **Janela no próprio bloco:** recusa fora do horário aprovado e quando o
-  tempo que falta é menor do que o bloco precisa (por exemplo, 150 minutos
-  para backup, reposição de teste e manutenção). O operador pode atrasar-se;
-  o bloco não pode confiar nisso.
-- **Janelas recorrentes proibidas** (backups diários, manutenção semanal,
-  outras janelas) verificadas para todos os minutos que o bloco vai ocupar,
-  não só para o início.
-- **Alvo fixado:** o bloco confirma que a configuração aponta para a release
-  e o commit esperados antes de agir.
+- **Intervalo aprovado completo:** guarda início e fim com datas e timezone
+  explícitos (ou instantes UTC), incluindo janelas que atravessam meia-noite.
+  Revalida o instante atual e exige que execução e verificação caibam antes
+  do fim autorizado, segundo uma duração conservadora medida e margem para
+  recuperação. Um horário recorrente livre não autoriza outra data. Mudança
+  de dia ou DST não cria nem prolonga autorização.
+- **Conflitos recorrentes:** verifica sobreposição em todo o intervalo previsto,
+  não só no início, usando a configuração efetiva do scheduler e os trabalhos
+  já em curso. Mantém esta prova separada da pertença à janela autorizada.
+- **Alvo fixado:** confirma identidade do host/serviço, fonte e configuração
+  efetiva antes de agir. Se drift mudar o delta ou o risco aprovado, recusa e
+  prepara um plano revisto; não atualizes o alvo silenciosamente.
 
 ## Estado anterior e retorno
 
-- Guarda o estado de partida antes de mexer: units, estado dos timers, e
-  `MainPID`/`NRestarts` dos serviços que não deviam mudar.
-- Para timers durante o bloco e repõe-nos ao estado anterior num `trap` de
-  saída, também em caso de falha.
-- Rollback por `trap`: repõe a unit anterior, fecha o login novo, repõe o
-  timer, e termina com uma linha que diz o que foi reposto.
-- No fim, compara os serviços com o estado de partida. Um PID diferente num
-  serviço que não devia ser tocado é falha.
+- Regista o estado relevante antes de mexer. Em systemd pode incluir units,
+  estado dos timers, invocações e `MainPID`/`NRestarts` dos serviços que não
+  deviam mudar; noutros gestores usa evidência equivalente. Um PID sozinho
+  pode ser reutilizado e não demonstra identidade.
+- Suspende agendamentos apenas quando o plano aprovado o exige. Regista o
+  estado anterior e o efeito de reativar: um timer persistente pode disparar
+  trabalho em atraso. Só o repões quando os recursos dependentes estiverem
+  consistentes e seguros para esse trabalho, segundo a estratégia validada.
+- Um `trap` pode iniciar limpeza, mas não prova rollback e pode nem correr
+  numa perda de energia ou término forçado. Mantém estado recuperável por um
+  operador posterior. O handler não esconde a falha original nem anuncia
+  sucesso se alguma restauração ou verificação falhou.
+- O rollback confirma autorização de recuperação, alvo exato, identidade de
+  execução, backups íntegros e compatíveis e ausência dos conflitos relevantes
+  para restaurar. Não exige que o estado parcial satisfaça guards de avanço
+  como versão-alvo instalada ou flag de sucesso. Define esses critérios de
+  recuperação antes do apply; não os elimina para desbloquear uma emergência.
+- O horário de recuperação segue a política aprovada: pode permitir terminar
+  recuperação fora da janela de avanço ou exigir intervenção específica. Não
+  bloqueies universalmente rollback por data/janelas recorrentes, nem assumes
+  permissão ilimitada para restaurar fora delas.
+- Restaura o conjunto coerente previsto pelo lote, não uma lista fixa universal
+  de unit, login e timer. Valida configuração, dados e disponibilidade após
+  cada recuperação. Se incompleta, mantém suspenso o trabalho inseguro e
+  reporta recursos pendentes e próximo passo autorizado; não diz “reposto”.
 
 ## Recibos como prova
 
-- Cada ação tem de produzir **exatamente um recibo novo** com o estado `_ok`
-  esperado, e nenhum ficheiro temporário (`.pending`) pode ficar. Não basta o
-  código de saída.
-- Valida dono, modo e tipo do recibo, não só o conteúdo.
+Define o contrato de evidência por ação e tentativa: identidade do alvo, fonte,
+resultado, alterações e recuperação. No workflow observado exigia-se um recibo
+novo `_ok` por ação e nenhum `.pending` residual; esse nome e cardinalidade são
+convenções locais, não universais. Valida autenticidade, tipo e permissões do
+artefacto conforme o modelo de ameaça; código de saída sozinho não basta.
+Preserva tentativas falhadas e não sobrescreve evidência de execução anterior.
 
 ## Helpers escritos para a janela
 
-Quando o bloco chama um helper preparado para essa janela (um script Python ou
-shell revisto), os erros repetem-se de helper para helper. Observado em
-18–19/10/2026:
+- **Versões como parâmetros verificados:** confirma os identificadores aprovados
+  contra o instalado; um deploy entre preparação e janela pode causar drift.
+  Não escondas um SHA fixo no código nem aceites o novo SHA automaticamente.
+- **Snapshot completo:** inclui todos os recursos tocados, incluindo dependências
+  recentes, e compara com o delta da release. Para ações não reversíveis define
+  recuperação/forward-fix antes de começar; backup de ficheiros não reverte
+  credenciais ou efeitos externos por si só.
+- **Identidades novas:** quando a base suportar `LOGIN`/`NOLOGIN`, pode ser
+  adequado criar a identidade sem login até a autenticação estar configurada.
+  Confirma o motor, regras efetivas (incluindo `trust` se existir) e teste de
+  acesso previsto. Não imponhas semântica PostgreSQL a outro motor.
+- **Linha de base contextual:** compara avisos e estados relevantes com o
+  baseline aprovado. Não normalizes um aviso novo por já haver avisos antigos.
+- **Durações medidas:** deriva margens por bloco de execuções comparáveis;
+  inclui verificações e recuperação, não só a mutação.
 
-- **Sem datas fixas.** Um guard `date == <dia aprovado>` bloqueia o corte se a
-  janela passar da meia-noite, e pior, bloqueia os rollbacks. O guard verifica
-  as janelas proibidas e o tempo que o passo precisa, não o calendário.
-- **Os rollbacks não passam pelos guards de avanço.** Um rollback exige root e
-  respeita as janelas proibidas, mais nada: não depende da data, do estado das
-  flags, nem de o estado instalado ser o esperado. Senão, o caminho de recuperação
-  falha precisamente quando é preciso.
-- **SHAs e versões são parâmetros verificados contra o instalado**, não
-  constantes. Um merge com deploy automático entre a preparação e a janela muda
-  o componente instalado; o helper deve recusar com uma mensagem clara, e o
-  preparador volta a fixar. Não escondas o SHA dentro do código.
-- **O snapshot lista tudo o que o helper vai tocar**, incluindo dependências
-  acrescentadas por PRs recentes (um script novo de que a rotação passou a
-  depender, uma política que vai mudar). Compara a lista com o diff da release.
-- **Identidades novas sem LOGIN até haver password**, verificado no catálogo
-  antes de abrir o login. Se o servidor tiver regras `trust` locais, um login sem
-  password aberto entra sem nada.
-- **Comparações exatas com linha de base**, não "zero avisos": regista os avisos
-  conhecidos antes e exige igualdade exata depois.
-- **Margens de tempo a partir de durações medidas** (journal das execuções
-  anteriores), declaradas por bloco.
-
-Se o mesmo tipo de operação se repete, transforma o helper num procedimento
-versionado e testado no repositório de infraestrutura, invocado com parâmetros,
-em vez de escrever outro na próxima janela.
+Se o trabalho se repete, promove o helper a procedimento versionado e testado
+no repositório de infraestrutura, com parâmetros verificados.
 
 ## Coordenação
 
-- Durante a janela não entram merges em repositórios com deploy automático
-  para esse host. Além do risco, um deploy a meio faz falhar as comparações de
-  PID sem razão.
-- O operador mostra o output de cada bloco antes de passar ao seguinte.
+Quando deploys automáticos possam alterar o mesmo alvo, evita concorrência
+com um mecanismo aprovado (freeze de merges, pausa do deploy, lock operacional
+ou equivalente). Não exige freeze de repositórios sem relação com o alvo.
+O operador revê o resultado de cada bloco antes de continuar; silêncio ou um
+processo desaparecido não provam conclusão.
+
+Referência técnica para o exemplo de catch-up: [systemd.timer — Persistent](https://www.freedesktop.org/software/systemd/man/latest/systemd.timer.html#Persistent=), consultada em 19/10/2026; outros schedulers exigem verificar o seu próprio contrato.

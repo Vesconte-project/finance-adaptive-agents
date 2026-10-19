@@ -44,7 +44,7 @@ proveniência de cada caso não é estabelecida por este catálogo.
 - **Sintoma:** `bad interpreter: No such file or directory` em CLIs instalados dentro de uma release.
 - **Causa:** a release foi construída num diretório de staging e depois renomeada. Os console scripts guardam o caminho absoluto do staging.
 - **Sonda:** `head -1 release/.venv/bin/CLI` e confirmar que o interpretador existe.
-- **Correção:** só executar código da release como root depois de verificar a sua origem e integridade e de confirmar que os ficheiros e diretórios são controlados por uma identidade confiável. `python3 -I` reduz influências do ambiente, mas não prova que o código seja confiável. Corrige o processo de build/instalação do launcher apenas após confirmar a cadeia de confiança.
+- **Correção:** só executar código da release como root depois de verificar a sua origem e integridade e de confirmar que os ficheiros e diretórios são controlados por uma identidade confiável. `python3 -I` reduz influências do ambiente, mas não prova que o código seja confiável. Corrige o processo de build/instalação do launcher apenas após confirmar a cadeia de confiança: cria/recria a venv no caminho final a partir das dependências verificadas, em vez de mover uma venv presumindo relocabilidade ou corrigir só um shebang. Se a ferramenta produzir artefactos relocáveis, valida o seu contrato específico. Verifica o shebang e uma invocação de diagnóstico sem efeitos antes de ativar.
 
 ### `python3 script.py` como root a partir de um diretório do utilizador
 - **Sintoma:** nenhum, até alguém aproveitar.
@@ -55,9 +55,9 @@ proveniência de cada caso não é estabelecida por este catálogo.
 
 ### Readiness que aceita o worker antigo
 - **Sintoma:** ativação "verificada" em 0,34 s; uma release partida passaria.
-- **Causa:** o registo do worker anterior, com o mesmo nome, continua `ONLINE` durante cerca de 90 s depois do restart.
-- **Sonda:** comparar `last_heartbeat_time` com o instante em que a ativação começou.
-- **Correção:** exigir heartbeat posterior ao início da ativação. Regra geral: nunca aceitar como prova um estado que já era verdade antes da mudança.
+- **Causa possível:** no caso observado, um registo do worker anterior, com o mesmo nome, continuava `ONLINE` durante cerca de 90 s; essa duração não é um contrato do backend.
+- **Sonda:** regista a nova instância (identidade única do worker, PID com instante de início e invocação do serviço) e o SHA/artefacto esperado. Um heartbeat posterior ao início da ativação pode ainda vir do processo antigo; até um nome reutilizado com timestamp recente não identifica o emissor.
+- **Correção:** exige um heartbeat fresco associado inequivocamente à nova instância e evidência de que essa instância carregou a release esperada. Se o backend só expõe um nome reutilizado, corrobora com logs da nova invocação e prova que a anterior não pode emitir, ou declara a ativação não verificada. Não confundir worker pronto com sucesso de um flow.
 
 ### O SHA da release não é o código que corre
 - **Sintoma:** `current/` aponta para uma release nova, mas os flows executam código antigo.
@@ -98,14 +98,15 @@ proveniência de cada caso não é estabelecida por este catálogo.
 
 ## Guardas e credenciais
 
-### Unit transitória perde o InvocationID antes de a lerem
+### Unit de prova perde o InvocationID antes de a lerem
 - **Sintoma:** `systemctl show UNIT -p InvocationID --value` devolve vazio logo depois de a unit ter corrido, e a verificação que depende dele recusa.
-- **Causa:** uma `Type=oneshot` em `/run/systemd/system` que ninguém referencia é descarregada ao ficar inativa e perde o estado de execução. Units normais mantêm-no porque um timer as referencia.
-- **Sonda:** comparar com uma unit referenciada por timer — essa mantém o ID depois de `inactive` ou `failed`.
-- **Correção:** `RemainAfterExit=yes`, e a ordem arrancar → ler o ID → verificar o journal → `stop` → remover → `daemon-reload`.
+- **Causa possível:** garbage collection pode descarregar configuração e estado quando a unit deixa de ser necessária. Um ficheiro em `/run/systemd/system` é uma unit de runtime, não prova de uma unit transitória criada por API.
+- **Sonda:** verifica estado, referências, jobs e `CollectMode=` na versão instalada; não assumes que toda unit normal tem um timer nem que todo estado `failed` é retido. Preserva o journal e associa os eventos à invocação, não apenas ao nome.
+- **Correção:** captura o ID enquanto a invocação é observável. Numa sonda oneshot adequada, `RemainAfterExit=yes` pode reter `active (exited)` após sucesso; implica que outro `start` não repete a execução até um `stop` apropriado. Valida esse efeito e o plano de limpeza: recolher/verificar evidência, parar a sonda, remover apenas os seus artefactos e recarregar a configuração. Sem ID inequívoco, não declarar a verificação concluída.
 
 ### Dois lotes tocam no mesmo ficheiro e o segundo recusa
 - **Sintoma:** `baseline drift` num lote cujo alvo já está instalado e correto.
+- **Pré-condição:** o mecanismo observado prepara a fonte do ramo integrado, não uma fonte isolada por lote; valida que o delta inteiro está autorizado antes de aceitar qualquer no-op.
 - **Causa:** os dois lotes foram integrados no ramo principal antes de qualquer um ser aplicado; o primeiro fez `stage` de uma fonte que já continha o segundo, e instalou o conteúdo final. O baseline do segundo descreve um estado intermédio que nunca existiu.
 - **Sonda:** comparar o hash instalado com o da fonte staged **e** com o do commit em que só o primeiro lote existia.
 - **Correção:** o lote distingue três casos — igual ao baseline (instala), igual ao alvo (registra no-op, sem escrever nada), outra coisa (recusa).
@@ -115,3 +116,9 @@ proveniência de cada caso não é estabelecida por este catálogo.
 - **Causa:** das duas chaves de leitura, uma era da identidade de serviço. Só se nota no próximo clone, que pode ser horas depois.
 - **Sonda:** com autorização para inspecionar a identidade do serviço, identifica as fontes reais e calcula primeiro fingerprints das chaves públicas (`ssh-keygen -lf PUBLIC_KEY`). Se for necessário ler uma chave privada para obter a chave pública/fingerprint, exige autorização explícita para essa leitura; nunca mostres o conteúdo privado.
 - **Correção:** só alterar o fornecedor remoto com autorização explícita. Antes de registar a chave, confirma pelo fingerprint que é a chave de serviço pretendida e limita as permissões ao necessário. Nunca mostres nem copies o conteúdo privado.
+
+## Fontes para as correções de lifecycle
+
+Consultadas em 19/10/2026; confirma a documentação da versão instalada: [systemd.unit — garbage collection](https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html#Unit%20Garbage%20Collection) e [systemd.service — RemainAfterExit](https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html#RemainAfterExit=). Os exemplos de workers continuam a depender do contrato do backend real.
+
+Para entrypoints Python, a [documentação de venv](https://docs.python.org/3/library/venv.html#how-venvs-work) explica os shebangs absolutos e a falta de relocabilidade geral (consultada em 19/10/2026).

@@ -10,7 +10,7 @@ Confirma primeiro que o sistema, a identidade e o sintoma correspondem à
 entrada. As sondas e correções dependem do ambiente e não concedem autorização
 para aceder ao host, contactar serviços remotos ou alterar estado.
 
-O catálogo completo está em `references/catalog.md` e contém 17 entradas.
+O catálogo completo está em `references/catalog.md` e contém 18 entradas.
 
 ## Índice por sintoma
 
@@ -44,7 +44,7 @@ O catálogo completo está em `references/catalog.md` e contém 17 entradas.
 - O serviço está vivo, a API responde, e o dashboard dá 404 → quer escrever dentro do pacote instalado.
 
 **Serviços e estado instalado**
-- `InvocationID` vazio logo após a unit correr → unit transitória descarregada.
+- `InvocationID` vazio logo após a unit correr → possível descarga do estado; confirmar lifecycle e referências.
 - `baseline drift` num lote cujo alvo já está instalado → dois lotes no mesmo ficheiro.
 - Deploy falha com `exit status 128` e o serviço não pode reiniciar → apagaram a deploy key do serviço.
 
@@ -53,7 +53,7 @@ O catálogo completo está em `references/catalog.md` e contém 17 entradas.
 1. Confirma que o sintoma é de operação do host e corresponde ao âmbito desta Skill.
 2. Confirma plataforma, serviço, identidade e configuração antes de escolher uma sonda.
 3. Identifica se a sonda requer privilégios, altera estado ou contacta um serviço remoto. Executa-a apenas se for aplicável e estiver autorizada; caso contrário, apresenta-a ao operador sem a executar.
-4. Trata a correção como hipótese. Explica os pré-requisitos e pede autorização antes de qualquer mudança; não a apliques automaticamente.
+4. Trata a correção como hipótese. Explica os pré-requisitos e confirma que a autorização existente cobre a mudança e o alvo; se não cobrir, pede-a antes de agir.
 5. Se a falha não estiver aqui e for nova, propõe uma entrada após confirmar o diagnóstico. Só edites o catálogo se este workspace for o repositório canónico da Skill e o utilizador tiver autorizado essa alteração.
 
 ## Regra geral que resume metade do catálogo

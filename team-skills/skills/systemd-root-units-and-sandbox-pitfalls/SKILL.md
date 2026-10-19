@@ -32,10 +32,14 @@ To find root execution paths writable by an unprivileged account:
 
 1. **Pick the right units.** Enumerate the **system manager's** service units
    (`systemctl list-unit-files`, not `--user`); a user manager's units run as that user.
-2. **Establish the effective identity** with `systemctl show -p User -p DynamicUser <unit>`. A
-   unit runs as root only when `User=root`, or `User=` is unset **and** `DynamicUser=` is not
-   `yes`. Remember that `+` and `!` command prefixes run individual commands as root even in a
-   non-root unit — include those commands too.
+2. **Establish the effective identity** with `systemctl show -p User -p DynamicUser <unit>`.
+   Resolve `User=` to its numeric UID: `root`, `0`, or another account resolving to UID 0
+   are all root identities. An unset `User=` in a system service normally defaults to root
+   unless `DynamicUser=yes` allocates a service identity. If resolution is unavailable, mark
+   identity unknown, not non-root. Inspect the running process effective UID and namespace
+   as corroboration; UID 0 in a user namespace need not grant host-root access. `+` and `!`
+   prefixes bypass configured identity changes for individual commands; include them even
+   in otherwise non-root units and verify their effective privilege.
 3. **Cover every command directive**, not just `ExecStart`: `ExecCondition=`, `ExecStartPre=`,
    `ExecStartPost=`, `ExecReload=`, `ExecStop=`, `ExecStopPost=`. For each, check the executable,
    absolute path arguments, `WorkingDirectory`, and `EnvironmentFile`, plus every parent

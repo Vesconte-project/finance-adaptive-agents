@@ -1,4 +1,9 @@
-# Decision evidence and epistemic status
+# Optional historical Finance evidence and epistemic status
+
+Read only for the originating Finance design; do not apply its constraints to another
+workspace. The source inspections below are recorded historical observations, not
+reproduced by the 2026-10-19 maintenance review. Reconfirm exact revisions and artifacts
+before relying on them.
 
 **Recorded 2026-10-11.** Proposed user-requested target architecture; **not** Company OS Acceptance, proof of deployment or confirmation that the real research executor works.
 
@@ -28,4 +33,7 @@ These observations are about Git sources, not proof of current running deploymen
 
 The recommended PostgreSQL + HTTPS pull path is driven by **existing** FastAPI lease authority, low expected demand, no clients to migrate, limited host resources and optional future remote workers. A broker may be justified later, but the trigger is **observed bottlenecks or delivery requirements**, not a company valuation or 30 worker servers alone. Worker count, network topology and DB read/write load need representative measurements before asserting safe scale.
 
-Verify with independent tests and production-like model runs. Revisit this Skill if schema/SDK versions, company requirements, queue semantics or real traffic contradict these assumptions. Do not repeat vendor performance examples as Vesconte measurements.
+For that design, verify with independent tests and authorized production-like model runs. Revisit this Skill if schema/SDK versions, company requirements, queue semantics or real traffic contradict these assumptions. Do not repeat vendor performance examples as Vesconte measurements.
+
+PostgreSQL 16 SELECT/LISTEN documentation rechecked 2026-10-19. Other vendor/version
+claims above remain historical pointers requiring refresh for the chosen implementation.

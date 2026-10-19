@@ -13,9 +13,9 @@ limite por identidade só atuava depois de o token ser aceite, e cada token
 falso com formato válido abria uma transação na base. O código passou nos
 testes, porque nenhum teste verificava a regra.
 
-A decisão que esta Skill muda: **uma regra transversal só existe se um teste
-falhar quando ela é violada.** A documentação explica o porquê; o teste
-impede a repetição.
+A decisão que esta Skill muda: **uma regra transversal só fica garantida pelo CI se
+uma verificação executada nesse CI falhar quando ela é violada.** A
+documentação explica o porquê; o teste impede a repetição.
 
 ## O padrão
 
@@ -44,18 +44,24 @@ antes de qualquer acesso à base; um pedido legítimo continua a passar dentro
 do limite. Um teste que só confirma que certa função foi chamada deixa passar
 uma implementação nova que a contorna.
 
-Inclui pelo menos um caso negativo que prove que o guarda consegue falhar
-(ver `guards-that-pass-blindly`).
+Inclui pelo menos um caso negativo que introduza uma violação controlada e
+prove que o guarda falha; evita que uma superfície vazia seja aceite como prova.
 
-## Camadas que o agente não vê
+## Evidência de camadas externas
 
-Regras aplicadas fora do repositório (edge/CDN, painéis de fornecedores,
-gateways geridos) não estão no git, não têm revisão e nenhum agente as consegue
-verificar ao escrever código. Não as uses como justificação para remover uma
-proteção dentro do serviço: cada camada protege contra falhas diferentes e
-pode mudar sem aviso. Se uma regra externa for essencial, regista-a como
-dependência no documento de invariantes, com o estado "não verificado pelo
-CI".
+Regras em edge/CDN, painéis de fornecedores ou gateways geridos podem ter
+configuração versionada, revisão e verificações automatizadas. Procura primeiro
+evidência no repositório (IaC, políticas, testes) e, se já houver acesso e
+autorização para o alvo, evidência do estado aplicado. Configuração pretendida
+e estado instalado são provas diferentes; sem esse acesso, usa evidência
+sanitizada disponível e regista o que não foi confirmado.
+
+Se uma regra externa for essencial, regista a dependência, o ponto onde é
+aplicada e a evidência que a cobre. Distingue "verificado pelo CI", "verificado
+fora do CI" (com origem/data) e "não verificado". Não concluas que a proteção
+dentro do serviço é redundante apenas por existir outra camada: demonstra que
+as garantias e caminhos de acesso relevantes ficam cobertos antes de propor
+a remoção.
 
 ## Sinais de alarme
 
@@ -68,12 +74,14 @@ CI".
 
 ## Quando não aplicar
 
-Num script de uso único, num repositório com um só autor humano e sem agentes,
-ou numa regra sem superfície enumerável, isto é excesso: chega uma checklist
-de revisão. O custo justifica-se quando há vários autores, sobretudo agentes,
-e a violação tem impacto de segurança ou de dados.
+Num script de uso único e baixo impacto, uma checklist de revisão pode ser
+suficiente. Escolhe inventário e testes quando houver uma superfície útil a
+cobrir e risco de violação recorrente com impacto de segurança ou dados.
+Vários autores ou agentes podem aumentar esse risco; um único autor também
+pode beneficiar destas garantias. Não forces um inventário sem relação com a
+propriedade que se quer proteger.
 
-## Relacionadas
+## Relacionadas (leitura opcional, se disponíveis)
 
 - `guards-that-pass-blindly`: um guarda que não vê passa sempre.
 - `clerk-fastapi-trust-boundaries`: fronteiras de identidade que estas regras

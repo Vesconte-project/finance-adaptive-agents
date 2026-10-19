@@ -119,7 +119,7 @@ source_secret_probe phase=pre required_inputs=<count> analyzed_values=<count> ve
 ```
 
 Se o alvo usar Linux/systemd e essa evidência for necessária, uma unit de prova
-transitória em `/run/systemd/system` pode testar parte das diretivas de sandbox.
+de runtime em `/run/systemd/system` (ou uma transitória criada por API) pode testar parte das diretivas de sandbox.
 Só a cries com autorização e um plano de limpeza. O resultado é evidência, não
 prova automática de equivalência: antes de extrapolar para produção, confirma
 runtime, identidade, inputs, mounts, versões e restantes condições efetivas.
@@ -127,12 +127,18 @@ Noutros runtimes, usa o mecanismo de prova equivalente.
 
 Duas considerações específicas dessa unit:
 
-- sem `RemainAfterExit=yes`, uma unit transitória que ninguém referencia é
-  **descarregada** ao ficar inativa, e o `InvocationID` desaparece — o
-  `systemctl show` seguinte devolve vazio. Units normais mantêm-no porque um
-  timer as referencia.
-- a ordem tem de ser: arrancar, ler o `InvocationID`, verificar o journal
-  dessa invocação, **parar**, remover o ficheiro, `daemon-reload`.
+- a retenção depende do estado, referências, jobs e `CollectMode=` reais;
+  o caminho do ficheiro não determina garbage collection nem torna a unit
+  transitória. A descarga pode perder estado de execução; um timer não é uma
+  referência universal de units normais.
+- captura o `InvocationID` enquanto a invocação é observável e verifica apenas
+  o journal dessa invocação. Para uma sonda oneshot, `RemainAfterExit=yes` pode
+  reter o estado após sucesso, mas outro `start` não volta a executá-la enquanto
+  permanecer ativa. Planeia e verifica o `stop` antes de repetir; depois limpa
+  só os artefactos da sonda e recarrega se alteraste ficheiros de unit.
+
+Fontes consultadas em 19/10/2026: [garbage collection de units](https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html#Unit%20Garbage%20Collection)
+e [RemainAfterExit](https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html#RemainAfterExit=); confirma a versão instalada.
 
 ## Exceções para scanners de objetos versionados
 
@@ -155,8 +161,12 @@ Assim a exceção descreve um facto histórico e não uma permissão futura.
 
 ## Um lock que nunca está ocupado
 
-Um lock de exclusão mútua é um guarda: só protege se os dois lados abrirem o
-**mesmo ficheiro**. Caso observado (19/10/2026): o backup usava
+Só revê este caso quando o lock é uma dependência de um scanner/gate já
+abrangido por esta Skill — por exemplo, protege a estabilidade dos inputs
+obrigatórios durante a leitura. Uma auditoria isolada de exclusão mútua fica
+fora do âmbito. O lock só protege se os dois lados abrirem o
+**mesmo objeto de lock**, não apenas caminhos textualmente iguais que podem
+resolver para objetos diferentes. Relato operacional ilustrativo (19/10/2026): o backup usava
 `$BACKUP_ROOT/.lock` (lido de um ficheiro de caminhos instalado) e a rotação de
 passwords tinha o caminho escrito à mão, sem o subdiretório. Os dois `flock`
 nunca colidiam e a rotação "obtinha o lock" sempre.

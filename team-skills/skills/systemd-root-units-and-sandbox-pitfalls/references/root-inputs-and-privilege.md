@@ -46,10 +46,14 @@ that exact line from that invocation's journal. A root phase that silently fails
 inputs is indistinguishable from one that found nothing.
 
 To test a unit's sandbox without touching the real unit, and only where you are authorised to
-start units on that host under its change policy, start a transient probe unit with the same
+start units on that host under its change policy, start a disposable probe with the same
 directives. Without that authorisation, inspect (`systemctl cat`, `systemd-analyze security
-<unit>`) and hand the probe to someone who holds it. A transient `Type=oneshot` unit is unloaded as soon as it becomes inactive, so
-give it `RemainAfterExit=yes` and read its invocation ID and journal before removing it.
+<unit>`) and hand the probe to someone who holds it. Runtime unit files and API-created
+transient units are distinct. State retention depends on actual references, jobs and
+`CollectMode=`; capture invocation-specific evidence before it can be collected. For a suitable
+oneshot probe, `RemainAfterExit=yes` may keep it active after success, but another `start` will
+not rerun it until it is stopped. Verify stop/cleanup and do not change production lifecycle
+just to retain a probe result.
 
 ## Secrets on the command line (verified)
 
@@ -62,13 +66,30 @@ exposures:
 - **The unit file.** Unit files are usually world-readable, so the value is exposed to every
   local account regardless of procfs.
 
-Move it to a root-owned `0600` `EnvironmentFile`, a token file option if the program has one, or
-systemd credentials (`LoadCredential=`). Rotate it if either exposure applied to any account or
-process that should not hold it, or if you cannot tell — which is the usual case. These are not equivalent: an `EnvironmentFile` keeps the value off the command line but
-places it in the process environment, readable by the same user and root through `/proc`;
-credentials are delivered as files readable only by the service's user and root.
+First establish how the application consumes the secret. Prefer a supported token-file or
+systemd credential-file interface (`LoadCredential=`) where available. The service must read
+the file directly: reading its contents into an argument still leaks the value. A root-owned
+`0600` `EnvironmentFile` avoids literal storage in the unit, but keeps a secret out of argv
+**only if the application consumes the environment directly**. For example,
+`ExecStart=/path/app --token ${TOKEN}` puts the expanded token back into argv. Environment
+inheritance and inspection remain additional exposure paths; it is not equivalent to protected
+credential files.
+
+Verify the resulting argv and consumption method through a non-secret sentinel in an isolated
+reproduction; do not print real process arguments or secret values as evidence. Check file
+access, child inheritance and logs. Rotate a credential when exposure to an unauthorised account
+or process occurred or cannot be excluded, within the approved rotation/recovery procedure.
 
 ## Group membership that is root in disguise
 
-Membership in `docker` or `lxd` is root-equivalent. A narrowly scoped sudoers entry for such an
-account is decorative. Treat these memberships as privilege grants when auditing boundaries.
+Do not infer privilege from a group name alone. Establish which daemon socket/API the account
+can actually access, the daemon's host privileges, rootless/user-namespace mode and applicable
+authorisation restrictions. Unrestricted access to a rootful Docker daemon or privileged LXD
+local control can grant host-root-equivalent power; rootless or restricted configurations need
+their own assessment. Compare the powers actually available with sudoers restrictions: a narrow
+sudo rule cannot contain an independent host-root grant, but may remain meaningful when no such
+grant exists. Test only with authorised non-destructive probes, not a privileged container launch.
+
+## Primary references
+
+Checked 2026-10-19; use the installed release documentation: [systemd.exec](https://www.freedesktop.org/software/systemd/man/latest/systemd.exec.html), [systemd.service](https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html), [systemd.unit garbage collection](https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html#Unit%20Garbage%20Collection), [Docker post-installation security note](https://docs.docker.com/engine/install/linux-postinstall/), and [LXD security model](https://canonical.com/lxd/docs/latest/explanation/security/).
