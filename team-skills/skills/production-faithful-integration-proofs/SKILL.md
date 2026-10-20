@@ -1,6 +1,6 @@
 ---
 name: production-faithful-integration-proofs
-description: Desenhar ou interpretar uma prova de integração descartável (CI, contentores, base efémera) cujo resultado vai decidir uma alteração em produção, como um pool de ligações, autenticação entre serviços, rede, permissões ou migrações. Usa quando uma prova destas falha ou passa e é preciso saber se a conclusão vale para produção. Não para testes unitários nem para provas sem consequência em produção.
+description: Desenhar ou interpretar uma prova de integração descartável (CI, contentores, base efémera), ou os testes de um helper operacional que vai correr em produção, quando o resultado vai decidir uma alteração real como um pool de ligações, autenticação entre serviços, rede, permissões, migrações ou um corte. Usa quando uma prova destas falha ou passa e é preciso saber se a conclusão vale para produção. Não para testes unitários de lógica pura nem para provas sem consequência em produção.
 ---
 
 # Uma prova só vale nas dimensões que reproduz
@@ -58,6 +58,44 @@ irrelevante para a decisão:
    representados de forma diferente (por exemplo um endereço com e sem `/32`);
    normaliza antes de comparar, em vez de afrouxar a verificação.
 
+## Testes de helpers operacionais com simulações
+
+Um helper escrito para uma janela de produção costuma ser testado com o sistema,
+a base e o HTTP simulados. Esses testes provam a lógica do helper, não os
+contratos com o que está instalado. Numa mesma noite (20/10/2026), helpers com
+dezenas de testes verdes falharam cinco vezes em produção, sempre por uma
+expectativa escrita à mão:
+
+- um campo lido de um checkpoint que a função publicada não devolve
+  (o teste usava um dicionário inventado com esse campo);
+- um ficheiro de credenciais do pooler tratado como `root:root 0600` quando era
+  `root:<grupo-do-pooler> 0640` (os testes simulavam a verificação de
+  permissões como identidade);
+- uma sonda com um parâmetro de arranque que o pooler recusa (a ligação era
+  simulada);
+- uma contagem fixa de verificações que mudara nesse dia com um consumidor novo;
+- `404` esperado em rotas retiradas com uma credencial de serviço a que o
+  servidor responde `403`, que é o comportamento correto.
+
+Regras que teriam apanhado os cinco:
+
+- **Formas reais:** gera as estruturas de entrada com as funções publicadas
+  (ou de amostras reais só com metadados), em vez de dicionários feitos à mão.
+- **Inventário de ficheiros:** dono, grupo e modo dos ficheiros que o helper
+  verifica ou restaura vêm de um inventário confirmado no alvo e são usados nos
+  testes, incluindo o restauro (que não pode impor `0600` a um ficheiro que um
+  serviço precisa de ler).
+- **Contagens e listas derivadas** da configuração instalada, com comparação
+  do conjunto exato, nunca de constantes.
+- **Contratos de protocolo** (respostas HTTP, parâmetros aceites por um pooler)
+  tirados dos testes ou da configuração do dono no SHA fixado, ou provados contra
+  o componente real com essa configuração.
+- **Ponta a ponta por ação:** cada ação do CLI tem pelo menos um teste que a
+  corre inteira com as fronteiras simuladas, não só as funções intermédias.
+
+Quando um destes testes passa, a conclusão é "a lógica está certa para as
+formas que o teste usou". Diz quais formas foram reais e quais foram assumidas.
+
 ## Sinais de que a prova está a mentir
 
 - Uma falha que não corresponde a nenhum sintoma observado em produção.
@@ -65,6 +103,8 @@ irrelevante para a decisão:
 - Uma conclusão forte ("a versão X está partida") tirada de uma única
   topologia que ninguém comparou com produção.
 - Dados sintéticos que nunca exercitam o caminho que vai correr em produção.
+- Testes verdes de um helper cujas entradas, permissões ou respostas foram
+  todas escritas pelo próprio autor do helper.
 
 ## Quando não aplicar
 

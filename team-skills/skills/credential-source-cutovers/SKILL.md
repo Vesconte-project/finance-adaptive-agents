@@ -16,8 +16,11 @@ autorização para testar credenciais nem permissão para alterar serviços.
 PostgreSQL 16 e PgBouncer 1.25.2. Num preflight, um perfil coincidia com um
 password-file desatualizado; outra fonte autenticava. Noutro corte, dez aliases
 de um serviço não autenticavam apesar de HTTP saudável e agendamentos pausados.
-As correções foram separadas por fase. Isto fundamenta a distinção entre provas,
-não um procedimento universal para esses produtos ou versões.
+As correções foram separadas por fase. A 20/10/2026, na troca do login de um
+builder e na ativação do login próprio de uma API, uma sonda de identidade
+falhou só no salto pelo pool e a equivalência do builder foi provada contra uma
+referência. Isto fundamenta a distinção entre provas, não um procedimento
+universal para esses produtos ou versões.
 
 ## Inventaria dependências, não apenas ficheiros
 
@@ -46,6 +49,16 @@ alargues permissões nem uses acesso ao motor de contentores como atalho.
 3. **Autenticação e identidade:** o percurso real aceita a credencial e devolve
    a identidade esperada. Se houver pool ou proxy, discrimina os saltos que a
    decisão exige. Um endpoint HTTP genérico não prova acesso à base.
+   A sonda tem de ser aceite por cada salto tal como está configurado: um
+   pooler pode recusar parâmetros de arranque que a base direta aceita. No caso
+   observado, PgBouncer só ignorava `extra_float_digits` e recusou
+   `options=-c default_transaction_read_only=on` com "unsupported startup
+   parameter", enquanto a ligação direta passava. A falha era da sonda, não da
+   credencial. Usa um arranque sem parâmetros extra e só uma leitura inócua
+   (por exemplo `current_user` e `session_user`); se precisares de impor
+   leitura no pool, confirma primeiro a configuração efetiva do pooler. Quando
+   uma sonda falha num só salto, separa as variantes por porta e parâmetro antes
+   de concluir que a credencial está errada.
 4. **Revogação:** depois da rotação autorizada, a credencial nova funciona e a
    antiga já não dá acesso no âmbito previsto. Apagar a cópia local não prova
    revogação no fornecedor.
@@ -77,6 +90,28 @@ recarrega apenas o que o mecanismo real exigir. Não repitas um comando de
 rotação só porque o recibo seguinte falta: primeiro determina se já mudou a
 credencial. Uma revogação externa não se desfaz restaurando um ficheiro antigo.
 
+## Trocar o login de um serviço que produz dados
+
+Quando o consumidor gera saídas (um build, um job de agregação), uma execução
+bem-sucedida com o login novo não prova que nada se perdeu: permissões em falta
+podem produzir menos resultados sem erro. Prova a equivalência com uma
+**referência**:
+
+- Corre primeiro uma execução real com o login antigo e o mesmo código, receita,
+  configuração e corte de inputs, e regista o recibo dela. Não reconstruas a
+  referência a partir de totais antigos.
+- Corre a execução candidata com o login novo e compara por unidade de saída,
+  incluindo as vazias e o motivo de estarem vazias. "7 de 8 publicadas" só é
+  aceitável se a referência tiver exatamente o mesmo conjunto de vazias pelo
+  mesmo motivo. No caso observado, uma combinação vazia por falta de dados de
+  origem parecia uma falha de permissões até a referência mostrar o mesmo.
+- Se a troca falhar antes de a candidata produzir saídas, a referência continua
+  válida enquanto for a última execução. Retoma a partir dela em vez de a repetir:
+  revalida que não houve execução posterior, arquiva o marcador da tentativa
+  falhada sem o apagar e regista a reentrada. Qualquer execução nova, mesmo
+  falhada, invalida a referência. Se um agendador puder correr entretanto,
+  mantém-no parado de propósito e com prazo, ou aceita repetir a referência.
+
 ## Sinais de falha e conclusão
 
 - Comparações iguais, mas autenticação recusada: a origem pode estar coerente
@@ -88,6 +123,10 @@ credencial. Uma revogação externa não se desfaz restaurando um ficheiro antig
   inventário está incompleto; não a elimines por parecer duplicada.
 - Avisos conhecidos transformados em sucesso geral: perdeu-se a fronteira
   entre retirada de fontes, reparação de consumidores e rotação.
+- Contagem de verificações diferente da esperada: deriva o número esperado dos
+  consumidores configurados no momento, não de uma constante. Um consumidor
+  novo legítimo (por exemplo, um login próprio criado no mesmo dia) muda a
+  contagem; um consumidor desconhecido também. Compara o conjunto exato.
 
 O recibo final distingue essas etapas, com evidência posterior à mudança,
 metadados dos destinos, consumidores verificados e pendências explícitas.

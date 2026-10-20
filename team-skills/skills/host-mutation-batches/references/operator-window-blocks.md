@@ -7,7 +7,7 @@ identidades, serviços, scheduler, armazenamento e procedimento de aprovação.
 
 Os exemplos abaixo vêm de janelas de backups e schema num host Linux único,
 com deploy automático; não exigem essa infraestrutura noutros ambientes.
-Os relatos de helpers de 18–19/10/2026 são aprendizagens locais, não prova
+Os relatos de helpers de 18–20/10/2026 são aprendizagens locais, não prova
 independente de segurança de outro host.
 
 ## Preparar separado de instalar
@@ -96,6 +96,75 @@ Preserva tentativas falhadas e não sobrescreve evidência de execução anterio
   baseline aprovado. Não normalizes um aviso novo por já haver avisos antigos.
 - **Durações medidas:** deriva margens por bloco de execuções comparáveis;
   inclui verificações e recuperação, não só a mutação.
+
+## Estado de partida da operação, não o alvo da release
+
+Entre janelas, o alvo fica muitas vezes num estado intermédio: a release nova já
+está instalada, mas as suas migrações só entram num corte posterior. Código ou
+verificadores dessa release assumem o estado final. No caso observado:
+
+- a retoma de uma operação exigia versões iguais ao manifesto completo e teria
+  recusado antes de começar, porque o manifesto já incluía as migrações do corte;
+- a ativação de um login com a ferramenta da release nova comparou a base com o
+  catálogo final e recusou por centenas de diferenças estruturais, antes de
+  mexer em qualquer coisa. A prova da CI estava verde porque só cobria o estado
+  final.
+
+Cada operação declara explicitamente o estado de que parte (versões por schema,
+hashes instalados, logins, flags), verifica igualdade exata com essa declaração
+e recusa qualquer diferença, incluindo versões superiores. A declaração fica
+ligada às migrações publicadas pelo mesmo ficheiro e digest, para não apontar
+para algo que não existe. Usa a ferramenta cuja expectativa corresponde a esse
+estado; código de uma fase futura só corre depois de essa fase acontecer. Se a
+CI só prova o estado final, a conclusão dela não cobre operações intermédias.
+
+## Entrada interativa e sessões longas
+
+- **Pedir valores por terminal dentro de `sudo bash <<'BASH'`** com
+  `</dev/tty` pode deixar o processo suspenso pelo sistema (estado `T` no `ps`),
+  sem responder a `Ctrl+C`, porque deixa de ser o grupo em primeiro plano do
+  terminal que o `sudo` criou. Verifica hashes num bloco e corre o passo
+  interativo diretamente (`sudo /usr/bin/python3 -I -B <helper> <ação>`), ou lê os
+  valores de um ficheiro protegido preparado pelo operador. Um processo parado
+  antes de qualquer escrita termina-se com `kill -KILL` pelo PID; confirma no
+  código que os valores eram todos pedidos antes de escrever.
+- **Linhas coladas num terminal em modo canónico** são cortadas por volta dos
+  4096 bytes. Um JSON grande (por exemplo um JWKS com certificados) chega
+  truncado e falha a validação. Reduz ao necessário (só as chaves públicas),
+  confirma o tamanho antes de colar, ou passa-o por ficheiro ou URL verificado.
+- **Passos que bloqueiam durante muito tempo** (um build de uma hora num
+  `systemctl start` de um serviço oneshot) correm dentro de `tmux` ou
+  equivalente: uma queda de SSH mata o cliente a meio e o rollback automático
+  não corre. Para recolher output longo: `tmux capture-pane -pS -3000 > ficheiro`.
+
+## Diagnóstico que sobrevive à falha
+
+- Um helper que captura o output do comando e só emite o código de saída perde a
+  causa. Guarda o stderr filtrado por uma lista de mensagens estáticas aprovadas
+  (o resto fica `[REDACTED]`), os SQLSTATE, a fase com nome próprio, a classe e
+  os frames (ficheiro, função, linha) das exceções. Nunca argv, stdout de
+  comandos que falharam, DSNs ou mensagens de exceção.
+- Se o rollback falhar dentro do tratamento de um erro, regista os dois e
+  relança o original. A 20/10 o rollback falhou e a exceção foi descartada; o
+  subpasso exato nunca foi recuperado.
+- Uma fase global que fica com o valor por omissão quando o chamador não a
+  atualiza aponta para o sítio errado. Dá nome a cada passo e subpasso.
+- Acrescenta diagnóstico com uma biblioteca comum, não reescrevendo o código
+  revisto por geração automática: uma instrumentação assim produziu um diff de
+  112 KB, apagou os comentários e obrigou a provar equivalência retirando a
+  instrumentação e comparando a AST com a versão revista.
+- Um filtro que oculta todas as linhas cumpriu o seu papel, mas não explica a
+  falha. Nesse caso, uma sonda só de leitura que imprime apenas categorias
+  (porta, variante, classe do erro, frases conhecidas) encontra a causa sem
+  expor segredos.
+
+## Retomar sem helpers improvisados
+
+Depois de uma falha a meio, desenha a retoma no próprio procedimento: revalida o
+estado atual, prova que os passos já feitos estão completos e continua a partir
+do último passo verificado. Sem isso, cada falha obriga a escrever e rever um
+helper novo de conclusão sob pressão, com o mesmo risco de erro que causou a
+falha.
 
 Se o trabalho se repete, promove o helper a procedimento versionado e testado
 no repositório de infraestrutura, com parâmetros verificados.
