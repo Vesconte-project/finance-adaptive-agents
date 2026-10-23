@@ -53,6 +53,7 @@ replicas remain local and reconstructible.
 | See or read available Skills | `team-skills list` / `team-skills show <id>` |
 | Review a local Skill without publishing | `team-skills validate [<id>]` |
 | Contribute a new or improved Skill | `team-skills propose` |
+| Turn verified experience into a proposal with independent authorship | `team-skills propose --context-file <handoff.md>` |
 | Work directly with lifecycle internals | `team-skills bootstrap` / `team-skills sync` |
 | Expose temporary contexts to an agent | `team-skills mcp` |
 | Evaluate selector routing at catalog scale | `team-skills evaluate-routing` |
@@ -232,6 +233,22 @@ packages before offering to create a blank draft. A selected candidate must pass
 and an isolated semantic assessment before the CLI prepares a branch and worktree from the latest
 local canonical baseline
 and offers explicit local commit, push, or draft-PR actions.
+
+To capture learning from a completed milestone without having the principal agent
+write the Skill, use the context-driven mode (0.23+):
+
+```sh
+team-skills propose --context-file /private/handoff.md \
+  --context-attachment /private/sanitized-proof.txt
+```
+
+A fresh author receives the complete supplied experience and admitted catalog metadata.
+It chooses whether to create a Skill, inspect and update an existing package, request
+missing evidence, or make no change. Generated files pass native checks and a separate
+independent assessment before a local canonical diff is prepared. An unprepared repository
+can use this mode without bootstrap, onboarding installation, or consumer state. See
+[experience-driven proposals](docs/CONTEXT_PROPOSALS.md) for the handoff, limits, storage,
+source selection and publication boundary. The existing manual `propose` flow remains available.
 
 A canonical source may opt into schema version 2 and declare
 `organization_default_skill_ids`. During a normal bootstrap, those active Skill IDs are presented

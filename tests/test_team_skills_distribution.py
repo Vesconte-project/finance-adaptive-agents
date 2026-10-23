@@ -1664,7 +1664,7 @@ def test_cli_reports_the_distribution_version(capsys):
         shared_cli.main(["--version"])
 
     assert version_exit.value.code == 0
-    assert capsys.readouterr().out.strip() == "team-skills 0.22.1"
+    assert capsys.readouterr().out.strip() == "team-skills 0.23.0"
 
 
 def test_validate_skill_uses_only_the_installed_copy_and_its_locked_predecessor(monkeypatch, tmp_path: Path, capsys):

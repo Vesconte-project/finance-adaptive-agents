@@ -12,8 +12,10 @@ from pathlib import Path
 from .canonical import SKILL_NAME, load_canonical_catalog
 from .repository import TeamSkillsError
 from .consumer import load_consumer_lock
+from .consumer import ConsumerSource
 from .skill_validation import SkillCandidate, load_candidate
 from .source import GitKnowledgeSource
+from .storage import user_data_root
 
 
 def proposal_root(repository: Path) -> Path:
@@ -377,3 +379,74 @@ def prepare_new(repository: Path, name: str, description: str) -> Path:
     )
     (target / "proposal.json").write_text(json.dumps({"schema_version": 1, "kind": "new"}, indent=2) + "\n", encoding="utf-8")
     return target
+
+
+def prepare_authored(
+    repository: Path,
+    candidate: SkillCandidate,
+    source_config: ConsumerSource,
+    expected_catalog_commit: str,
+    *,
+    skill_id: str | None = None,
+    offline: bool = False,
+) -> PreparedProposal:
+    """Prepare an independently authored package without installing consumer state.
+
+    The entire catalog revision must still match the author's input. Never apply a
+    model decision against a catalog that changed while it was thinking.
+    """
+    source = GitKnowledgeSource(repository, runtime_root=user_data_root() / "runtime")
+    commit = source.acquire(source_config.url, source_config.ref,
+                            catalog_path=source_config.catalog_path, offline=offline)
+    if commit != expected_catalog_commit:
+        raise TeamSkillsError("canonical catalog changed during authorship; rerun the proposal with fresh context")
+    base = source.resolved_ref_commit or commit
+    latest = _latest_catalog(source, base, source_config.catalog_path)
+    baseline = latest.by_id().get(skill_id) if skill_id is not None else None
+    if skill_id is not None and (baseline is None or baseline.state != "active" or baseline.name != candidate.name):
+        raise TeamSkillsError("authored update no longer matches an active canonical identity")
+    if skill_id is None and any(item.id == candidate.name or item.name == candidate.name for item in latest.skills):
+        raise TeamSkillsError("authored addition conflicts with an existing canonical identity")
+    skill_path = baseline.source_path if baseline else f"skills/{candidate.name}"
+    repository_path = _repository_skill_path(source_config.catalog_path, skill_path)
+    branch = f"team-skills/authored-{candidate.name}-{candidate.digest_sha256[:12]}-{base[:12]}"
+    final = _prepare_worktree(source, branch, base)
+    if (final.is_symlink() or not final.is_dir() or _git(final, "rev-parse", "HEAD").strip() != base
+            or _git(final, "branch", "--show-current").strip() != branch):
+        raise TeamSkillsError("existing authored proposal is unsafe; preserve it for inspection")
+    if _git_paths(final, "ls-files", "--others", "--ignored", "--exclude-standard", "-z"):
+        raise TeamSkillsError("existing authored proposal has ignored files; preserve it for inspection")
+    changed = _git_paths(final, "diff", "--name-only", "-z")
+    untracked = _git_paths(final, "ls-files", "--others", "--exclude-standard", "-z")
+    if changed or untracked:
+        _, diff = _reusable_checkout_state(
+            final, branch, base, source_config.catalog_path, skill_path, candidate, repository_path,
+        )
+        reused = True
+    else:
+        if _git_paths(final, "diff", "--cached", "--name-only", "-z"):
+            raise TeamSkillsError("existing authored proposal has staged changes; preserve it for inspection")
+        root = final if source_config.catalog_path == "." else final / source_config.catalog_path
+        target = root / skill_path
+        if baseline:
+            _replace_materialized(target, candidate)
+        else:
+            if target.exists() or target.is_symlink():
+                raise TeamSkillsError("authored proposal destination already exists")
+            target.mkdir(parents=True)
+            (target / "team-skills.json").write_text(json.dumps({
+                "schema_version": 1, "id": candidate.name, "state": "active",
+            }, indent=2) + "\n", encoding="utf-8")
+            for relative, data in candidate.files:
+                destination = target / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_bytes(data)
+        diff = _proposal_diff(final, repository_path)
+        reused = False
+    root = final if source_config.catalog_path == "." else final / source_config.catalog_path
+    verified = load_canonical_catalog(root, base, lambda _path: base).by_id().get(skill_id or candidate.name)
+    if (verified is None or verified.state != "active" or verified.name != candidate.name
+            or verified.digest_sha256 != candidate.digest_sha256 or not diff):
+        raise TeamSkillsError("prepared authored package does not match the validated candidate")
+    return PreparedProposal(final, branch, diff, source_config.ref, skill_id or candidate.name,
+                            repository_path, reused, "update" if baseline else "addition")

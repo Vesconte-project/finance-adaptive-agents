@@ -13,6 +13,7 @@ from typing import Mapping, Protocol
 from finance_adaptive_agents.team_skills.repository import TeamSkillsError
 
 from .evidence import RepositorySkillsEvidence
+from .isolation import codex_isolation_arguments
 
 
 @dataclass(frozen=True)
@@ -201,6 +202,7 @@ class CodexSkillSelector:
                 "read-only",
                 "--ignore-user-config",
                 "--ignore-rules",
+                *codex_isolation_arguments(),
                 "--output-schema",
                 str(schema_path),
                 "--output-last-message",

@@ -28,6 +28,7 @@ from .selector import (
     selector_for,
 )
 from .skill_quality import assess_candidate
+from .authoring import propose_from_context, read_context
 from .skill_validation import (
     SkillCandidate,
     consumer_validation_targets,
@@ -217,11 +218,15 @@ def _parser() -> argparse.ArgumentParser:
             "Prepare a contribution to the canonical Skill catalog. Choose an installed\n"
             "Skill to improve, select an existing local Skill package, or start a draft.\n"
             "A candidate must pass independent validation before an isolated source\n"
-            "checkout is prepared. Commit, push, and draft-PR actions remain explicit."
+            "checkout is prepared. With --context-file, a fresh independent author\n"
+            "receives the supplied experience and chooses create/update/no-change or\n"
+            "requests missing evidence before a separate assessment. No bootstrap is needed.\n"
+            "Commit, push, and draft-PR actions remain explicit."
         ),
         epilog=(
             "Examples:\n"
             "  team-skills propose\n"
+            "  team-skills propose --context-file handoff.md --context-attachment proof.txt\n"
             "  team-skills propose --new --name cloud-run-deployment-safety \\\n"
             "    --description \"Use when reviewing a Google Cloud Run deployment.\"\n\n"
             "The safe default keeps the prepared checkout local. Nothing is published\n"
@@ -235,6 +240,13 @@ def _parser() -> argparse.ArgumentParser:
     propose.add_argument("--description", help="New Skill discovery description (with --new)")
     propose.add_argument("--selector", choices=("codex", "claude", "copilot"))
     propose.add_argument("--offline", action="store_true", help="Use the latest local canonical replica")
+    propose.add_argument("--context-file", type=Path, metavar="PATH",
+                         help="Independently author a proposal from a complete UTF-8 experience handoff")
+    propose.add_argument("--context-attachment", type=Path, action="append", default=[], metavar="PATH",
+                         help="Additional explicit UTF-8 evidence file (repeatable; requires --context-file)")
+    propose.add_argument("--source", help="Canonical source for context authorship in an unprepared repository")
+    propose.add_argument("--catalog-path", help="Catalog path inside --source (default: .)")
+    propose.add_argument("--ref", help="Canonical Git ref for --source (default: main)")
 
     setup = commands.add_parser(
         "setup",
@@ -1403,6 +1415,42 @@ def _run(args: argparse.Namespace) -> int:
                         print(f"\n--- {skill.id}/{path} ---\n")
                         print(content.decode("utf-8").rstrip())
         return 0
+    if args.command == "propose" and args.context_file is not None:
+        if args.new or args.name is not None or args.description is not None:
+            raise TeamSkillsError("context authorship decides create/update and identity; omit --new, --name and --description")
+        root = find_repository(args.repo)
+        documents = read_context((args.context_file, *args.context_attachment))
+        from .consumer import load_consumer_config, load_consumer_lock
+        if (root / ".team-skills" / "config.json").exists() or (root / ".team-skills" / "lock.json").exists():
+            if args.source is not None or args.catalog_path is not None or args.ref is not None:
+                raise TeamSkillsError("a prepared repository uses its locked source; omit source overrides")
+            source_config = load_consumer_config(root).source
+            lock = load_consumer_lock(root)
+            if (source_config.url, source_config.ref, source_config.catalog_path) != (lock.source_url, lock.source_ref, lock.catalog_path):
+                raise TeamSkillsError("consumer config and lock disagree about the canonical source")
+        else:
+            if args.source is None and (args.catalog_path is not None or args.ref is not None):
+                raise TeamSkillsError("--catalog-path and --ref require --source")
+            source_config = (external_consumer_source(args.source, args.ref or "main", args.catalog_path or ".")
+                             if args.source else default_consumer_source())
+        provider = resolve_selector_name(args.selector, preference=load_selector_preference())
+        result = propose_from_context(root, source_config, documents, provider, offline=args.offline,
+                                      progress=lambda message: print(f"[team-skills] {message}...", flush=True))
+        print(f"Authorship decision: {result.decision}")
+        _print_wrapped_text(result.summary)
+        print(f"Catalog: {result.source_commit}" + (" (offline; remote freshness unchecked)" if result.offline else ""))
+        for item in result.missing_evidence:
+            _print_wrapped_text(item, initial="  - ", subsequent="    ")
+        if result.draft_path is not None:
+            print(f"Generated draft and review: {result.draft_path.parent}")
+        if result.prepared is not None:
+            _apply_prepared_proposal_action(result.prepared, assessment=result.assessment,
+                                            changed_paths=result.changed_paths)
+        elif result.assessment is not None:
+            _print_skill_assessment(result.assessment, detailed=True)
+        return 2 if result.decision in {"needs_evidence", "needs_revision"} else 0
+    if args.command == "propose" and (args.context_attachment or args.source or args.catalog_path or args.ref):
+        raise TeamSkillsError("context attachments and source options require --context-file")
     if args.command in {"prepare", "bootstrap", "sync", "validate", "propose"}:
         command_root = find_repository(args.repo)
         if not _ensure_first_run_setup(args.selector):

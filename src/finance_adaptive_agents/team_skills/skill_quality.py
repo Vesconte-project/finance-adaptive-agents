@@ -11,6 +11,7 @@ from pathlib import Path
 
 from .repository import TeamSkillsError
 from .skill_validation import SkillCandidate
+from .isolation import codex_isolation_arguments
 
 
 class SkillAssessmentUnavailable(TeamSkillsError):
@@ -125,11 +126,11 @@ def assess_with_codex(candidate: SkillCandidate, executable: str = "codex", time
             result = subprocess.run(
                 [
                     executable, "exec", "--ephemeral", "--sandbox", "read-only", "--ignore-user-config",
-                    "--ignore-rules", "--output-schema", str(schema_path), "--output-last-message",
-                    str(output_path), prompt,
+                    "--ignore-rules", *codex_isolation_arguments(), "--output-schema", str(schema_path), "--output-last-message",
+                    str(output_path), "-",
                 ],
                 cwd=root, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
-                timeout=timeout_seconds,
+                timeout=timeout_seconds, input=prompt,
             )
         except (FileNotFoundError, subprocess.TimeoutExpired) as error:
             raise SkillAssessmentUnavailable(f"isolated Codex assessment is unavailable: {error}") from error
@@ -147,11 +148,11 @@ def assess_with_claude(candidate: SkillCandidate, executable: str = "claude", ti
     command = [
         executable, "--safe-mode", "-p", "--tools", "", "--disable-slash-commands", "--strict-mcp-config",
         "--mcp-config", '{"mcpServers":{}}', "--no-session-persistence", "--output-format", "json",
-        "--json-schema", schema, prompt,
+        "--json-schema", schema,
     ]
     try:
         result = subprocess.run(command, cwd=tempfile.gettempdir(), check=False, stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, text=True, timeout=timeout_seconds)
+                                stderr=subprocess.PIPE, text=True, timeout=timeout_seconds, input=prompt)
     except (FileNotFoundError, subprocess.TimeoutExpired) as error:
         raise SkillAssessmentUnavailable(f"isolated Claude assessment is unavailable: {error}") from error
     if result.returncode != 0:
@@ -169,11 +170,12 @@ def assess_with_copilot(candidate: SkillCandidate, executable: str = "copilot", 
         "GITHUB_COPILOT_PROMPT_MODE_REPO_HOOKS": "false",
         "GITHUB_COPILOT_PROMPT_MODE_WORKSPACE_MCP": "false",
     })
-    command = [executable, "-p", assessment_prompt(candidate), "-s", "--no-ask-user", "--no-custom-instructions",
+    command = [executable, "-s", "--no-ask-user", "--no-custom-instructions",
                "--disable-builtin-mcps", "--no-experimental", "--available-tools="]
     try:
         result = subprocess.run(command, cwd=tempfile.gettempdir(), check=False, stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, text=True, timeout=timeout_seconds, env=environment)
+                                stderr=subprocess.PIPE, text=True, timeout=timeout_seconds, env=environment,
+                                input=assessment_prompt(candidate))
     except (FileNotFoundError, subprocess.TimeoutExpired) as error:
         raise SkillAssessmentUnavailable(f"isolated Copilot assessment is unavailable: {error}") from error
     if result.returncode != 0:
