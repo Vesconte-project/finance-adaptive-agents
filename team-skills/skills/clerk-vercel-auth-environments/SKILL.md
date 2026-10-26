@@ -54,6 +54,38 @@ Preview is protected, distinguish Vercel's login page from the app's Clerk page.
 Report separately: deployment readiness, effective key, rendered form, and any
 completed authentication flow. A green deployment is not functional evidence.
 
+## Automatic Frontend API proxy (`/__clerk`) on Vercel
+
+Some Clerk Next.js SDK versions enable a Frontend API proxy automatically during a
+Vercel Production build, deriving it from Vercel system variables (for example when
+the project's production URL is a `*.vercel.app` domain). The served page then
+announces a proxy path such as `/__clerk`, but the application only serves it if its
+middleware explicitly enables the proxy and its matcher covers that path.
+
+Recognizable signals, without reading any secret:
+
+- the served HTML contains `proxyUrl` with `/__clerk`, and `clerk-js` is loaded from
+  `/<site>/__clerk/npm/...`;
+- `/__clerk/npm/@clerk/clerk-js@…/dist/clerk.browser.js` and `/__clerk/v1/client`
+  return 404 from the site, while the instance's own Frontend API host (the custom
+  `clerk.<domain>` CNAME) answers `/v1/environment` with 200;
+- a browser with an older Clerk cookie is redirected to
+  `/__clerk/v1/client/handshake?...` and gets 404; a fresh private window renders the
+  page but sign-in cannot load.
+
+Decide explicitly: either serve the proxy deliberately (middleware option plus matcher
+plus any CSP changes), or disable automatic proxying and use the instance's Frontend API
+host directly. With a working Frontend API CNAME, disabling is the simpler fix: set the
+SDK's documented opt-out (for example `CLERK_DISABLE_AUTO_PROXY=true`) in the affected
+target, confirm no explicit proxy variables exist, and **rebuild without the build
+cache**, because the proxy URL is baked into already generated HTML. If the project uses
+manual promotion, promote the new deployment. Verify that the HTML no longer contains
+the proxy path and that `clerk-js` loads from the Frontend API host. Check every Next.js
+project that shares the SDK behavior before opening it on a custom domain.
+
+Observed in October 2026 with `@clerk/nextjs` 7.5.x and 7.9.x on Vercel; confirm the
+detection rules and the opt-out name in the installed SDK version.
+
 The “Secured by Clerk” badge is controlled by Clerk's plan and dashboard setting.
 Check the current plan and official docs before promising removal; appearance CSS
 is not the source of that setting.

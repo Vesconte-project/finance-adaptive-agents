@@ -18,6 +18,12 @@ unit e aplica as regras da versão instalada para o ambiente do manager,
 diretivas e dos ficheiros pode importar; confirma-a no sistema alvo, sem
 assumir que a última camada de uma lista genérica ganha.
 
+Um guard que compara o ambiente de um processo com **um só** ficheiro gera falsos
+alarmes de drift quando a mesma chave também existe noutro `EnvironmentFile`
+carregado depois. Calcula o valor esperado de cada chave a partir da última fonte
+que a define, pela ordem real da unit, e só então compara (por hash, sem valores).
+Um ficheiro alterado depois do arranque do processo continua a ser drift real.
+
 Um wrapper, a aplicação ou um orquestrador pode transformar ou substituir
 valores depois do arranque. Trata esses mecanismos como fontes condicionais:
 investiga-os apenas se o serviço realmente os usar e identifica qual componente

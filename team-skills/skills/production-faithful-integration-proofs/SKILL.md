@@ -92,6 +92,18 @@ Regras que teriam apanhado os cinco:
   o componente real com essa configuração.
 - **Ponta a ponta por ação:** cada ação do CLI tem pelo menos um teste que a
   corre inteira com as fronteiras simuladas, não só as funções intermédias.
+- **Simuladores estritos:** um `systemctl`, `psql` ou CLI simulado recusa as
+  opções e os formatos que a versão instalada recusa. Um simulador que aceita
+  tudo deixou passar `systemctl --utc show`, que o systemd 259 já não aceita, e
+  o instalador só falhou em produção.
+- **Volume proporcional:** provas de memória e de tempo usam volumes da ordem dos
+  de produção (por exemplo, todas as empresas com todo o histórico de
+  demonstrativos), não amostras pequenas. Um builder que carregava 1,36 milhões
+  de linhas de uma vez passou nos testes e excedeu o limite de memória no
+  primeiro run real.
+- **Conteúdo esperado do commit instalado:** quando um helper fixa os ficheiros
+  esperados de uma release, tira-os da árvore do merge realmente instalado, nunca
+  da cabeça de um PR. Dois PRs com a mesma base não se incluem um ao outro.
 
 Quando um destes testes passa, a conclusão é "a lógica está certa para as
 formas que o teste usou". Diz quais formas foram reais e quais foram assumidas.
