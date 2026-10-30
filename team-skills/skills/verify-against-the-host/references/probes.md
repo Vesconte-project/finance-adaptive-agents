@@ -240,3 +240,35 @@ O `sitecustomize.py` acima simula só `pwd.getpwnam` e `grp.getgrnam` para os
 nomes indicados. Não cobre `getpwuid`, `getgrgid`, subprocessos como `id` nem
 outros mecanismos de resolução; um teste verde não prova ausência de todas
 as dependências de contas locais.
+
+## Factos do host que partem código revisto
+
+Casos reais (2026-10) em que código com testes verdes falhou no host. Antes de dar uma mudança
+por pronta, confirma estes factos no host alvo:
+
+- **Tipo de filesystem de cada caminho que entra num cálculo de capacidade.** Um `/tmp` em
+  tmpfs (RAM) nunca tem uma reserva de 20 GiB. Uma regra de capacidade aplicada a todos os
+  filesystems recusou todas as builds. Para cada caminho, obtém o `st_dev` e procura o tipo em
+  `/proc/self/mountinfo`.
+
+  ```bash
+  findmnt -no FSTYPE,SIZE,AVAIL --target /tmp
+  ```
+
+- **`systemctl show` recusa unidades template** (`nome@.service`, sem instância). Um inventário
+  que passa a lista de `list-unit-files` diretamente ao `show` falha sempre num host com
+  templates. Os templates leem-se com `systemctl cat`; as instâncias, com
+  `list-units --all`. Unidades falhadas aparecem com `●` no início da linha.
+
+  ```bash
+  systemctl --no-pager list-unit-files --type=service,timer --no-legend --plain | awk '$1 ~ /@\./' | head
+  ```
+
+- **"active" não quer dizer "a aceitar ligações".** Depois de um restart, o systemd marca o
+  serviço como ativo antes de a aplicação abrir a porta. Uma verificação de saúde feita logo a
+  seguir apanhou `URLError` e acionou um rollback desnecessário. Faz polling da saúde, com um
+  prazo (por exemplo 90 s), e trata recusa de ligação e timeout como "ainda não", não como falha.
+- **Um bind parameter escondido num literal SQL.** Num `text()` do SQLAlchemy, um regex como
+  `(?:Error` dentro do SQL é lido como o parâmetro `:Error`, e o resultado é `StatementError`. Escapa os
+  dois pontos ou passa o padrão como parâmetro, e testa a compilação do SQL (os binds
+  esperados) sem ligação à base.

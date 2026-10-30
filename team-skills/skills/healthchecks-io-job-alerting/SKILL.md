@@ -52,6 +52,16 @@ current API behaviour for your account.
   action *completed*, send a success ping on completion and check the event log. The log can be
   read from outside the host through the dashboard or the API, but only with an account or API
   key that has access to the project; confirm who holds that access before relying on it.
+- **Grace does not delay an explicit `/fail`.** A monitor that sends `/fail` when its own
+  observation fails (API unavailable, timeout) alerts at once, however long the grace. Decide
+  whether an unavailable observation is an immediate failure or only counts when repeated, and
+  test that behaviour.
+- **Orphaned checks.** When a monitor or job is retired, pause its check in the same piece of
+  work and record why; a red check with no sender trains people to ignore alerts. Also confirm
+  whether what it covered is now left without any check.
+- **Ping URLs pasted into a chat or ticket are exposed.** Anyone holding one can send false
+  success or failure. A check's UUID cannot be changed: rotation means a new check and an
+  updated sender. Plan the rotation and do not copy the URL anywhere else.
 - Signal completion as well as failure. A channel that only reports failures leaves the operator
   unable to tell "done" from "silently stuck".
 
