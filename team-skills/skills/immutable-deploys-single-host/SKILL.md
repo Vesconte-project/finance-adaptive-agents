@@ -1,6 +1,6 @@
 ---
 name: immutable-deploys-single-host
-description: Desenhar releases imutáveis para serviços num único host Linux que atualmente correm a partir de checkouts Git mutáveis. Usa para substituir esse modelo por releases fixadas e verificáveis; não para rollback genérico, Kubernetes ou para definir um componente sem esse contexto.
+description: Desenhar e operar releases imutáveis para serviços num único host Linux, incluindo a transição de checkouts Git mutáveis. Usa para substituir esse modelo por releases fixadas e verificáveis ou planear a sua retenção física; não para rollback genérico, Kubernetes ou para definir um componente sem esse contexto.
 ---
 
 # Releases imutáveis num host único
@@ -130,6 +130,11 @@ e tem de ser verificado depois. Caso contrário o `current/` mente.
 Define retenção segundo requisitos de capacidade, auditoria e recuperação do
 serviço. Limpeza é uma operação separada, com inventário e autorização; não
 apagues a única cópia recuperável nem assumas um número fixo de releases.
+
+Antes de propor remoção, lê
+[references/retention-physical-reclaim-and-recovery.md](references/retention-physical-reclaim-and-recovery.md).
+Distingue recibos de auditoria de referências executáveis e mede blocos por inode;
+inventário e espaço medido não autorizam apagar binários.
 
 ## Referência de contrato
 
