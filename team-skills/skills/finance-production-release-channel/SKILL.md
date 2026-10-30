@@ -43,6 +43,36 @@ Components that run scheduled work are activated only when no run is active or d
 made before a dense block of scheduled runs can legitimately stay deferred for hours. Do not
 "fix" a deferral by restarting services by hand; check the forecast and the result first.
 
+Since the Marco 0 engine (installed 2026-10-30, finance-infra #169–#174) the gate is stricter
+and applies to **every** component:
+
+- it refuses to start inside the forbidden windows, with no run active in any pool (nor the
+  weekly Atlas service), when work is scheduled within about 45 minutes, or when the attempt
+  budget (30 min) would cross the start of a forbidden window;
+- a deferred request is retried every few minutes but is installed **only inside the supervised
+  window** of the release-windows policy. It expires after 24 h with an alert and is never
+  forced. A newer request for the same component supersedes it;
+- a merge made shortly before an evening run therefore waits until the next morning. To land
+  before a given night, merge after the previous run finishes and early enough for CI plus
+  the 45-minute margin before the next one. Read the scheduled runs before choosing the
+  moment.
+
+The final outcome of a deferred request (installed later, expired, failed or rolled back)
+reaches the release Healthchecks check, not the GitHub run, which stays green once the request
+is accepted.
+
+## Capacity admission and retention
+
+Before staging, the engine requires the persistent release/cache filesystem to keep its
+reserve plus a per-component staging budget; volatile filesystems such as a tmpfs `/tmp` are
+observed but are not subject to the reserve. A missing budget or a changed component contract
+refuses with `STAGING_MEASUREMENT_REQUIRED`; capacity refusals say `STAGING_CAPACITY_INSUFFICIENT`.
+Budgets live in a root-only operations directory and must be re-measured when a component's
+dependency footprint changes materially. Retention keeps the current release, two verified
+predecessors and registered recovery references. It runs in `plan` mode (lists candidates,
+removes nothing) until a human approves `collect`. Do not delete release directories by hand
+outside a reviewed batch that re-validates references at deletion time.
+
 ## Closed lists that live in another repository
 
 The release engine's configuration in `finance-infra` holds a **closed list** of the Prefect
@@ -55,8 +85,9 @@ Observed on 2026-10-18 when a weekly-atlas deployment was added to the feature s
 - When a component PR adds or renames a deployment, prepare the matching `finance-infra` change
   in the same piece of work, and merge it **before** the component PR, or the deploy fails.
 - After any feature-store or data-ops release, confirm both the release receipt and the Prefect
-  state: every schedule still `active: false` while production schedules are on hold, and no
-  scheduled or running flow runs.
+  state: the deployments carry the new pinned SHA, schedules have the state the current
+  operating decision requires (they were on hold in September and are active since the
+  resumption), and no unexpected flow runs were created.
 - Treat other cross-repository pins the same way: a manifest that fixes a commit or checksum in
   `finance-infra` must change together with the owner repository, and its CI admission only
   passes once the owner commit is on `main`.
@@ -82,7 +113,7 @@ updating them has already had to be reconstructed once. Update them only if you 
 the user has authorised it; otherwise end your report with exactly what needs recording and
 where.
 
-## Environment facts (state as of 2026-09-25 — confirm, do not rely)
+## Environment facts (state as of 2026-09-25, updated 2026-10-30 — confirm, do not rely)
 
 Re-check against finance-infra whenever you use one; if any has drifted, fix this section.
 
@@ -93,8 +124,11 @@ Re-check against finance-infra whenever you use one; if any has drifted, fix thi
   (finance-research-orchestrator). `finance-ml-lab`, `finance-strategy-lab` and
   `finance-backtest` reach production only through the orchestrator's `runtime-lock.json` and a
   `research-runtime` release. `finance-infra` itself is never deployed by the runner.
-- Activation exit codes: `75` deferred (accepted, retried every few minutes), `76` expired after
-  six hours (a failure).
+- Activation exit codes: `75` deferred (accepted, retried every few minutes), `76` expired
+  (a failure). The expiry was six hours until 2026-10-30 and is 24 hours with the Marco 0
+  engine; deferred retries install only inside the supervised window.
+- Host monitor (since 2026-10-30): disk, stuck runs and worker memory are reported every 15 s
+  to three Healthchecks checks, separate from the release check.
 - The four Prefect-mapped components are gated on their pool; `prefect-control-plane` waits for
   **both** pools. The pending warning is forecast-relative (Lote 10).
 - The runner identity was designed with no sudo, Docker, service secrets, or PAT; host batches

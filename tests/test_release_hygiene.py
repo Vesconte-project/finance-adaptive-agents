@@ -40,6 +40,12 @@ def test_canonical_skill_catalog_is_safe_and_portable():
 
     assert [(skill.id, skill.name, skill.state) for skill in catalog.skills] == [
         ("agent-operating-agreement", "agent-operating-agreement", "active"),
+        (
+            "availability-holds-from-provider-signals",
+            "availability-holds-from-provider-signals",
+            "active",
+        ),
+        ("bounded-memory-batch-builders", "bounded-memory-batch-builders", "active"),
         ("canonical-team-skill-authoring", "canonical-team-skill-authoring", "active"),
         (
             "ci-cost-and-duration-under-agent-load",
@@ -95,6 +101,7 @@ def test_canonical_skill_catalog_is_safe_and_portable():
             "active",
         ),
         ("public-site-crawler-backpressure", "public-site-crawler-backpressure", "active"),
+        ("registry-selection-changes", "registry-selection-changes", "active"),
         ("research-dispatch-transport-boundary", "research-dispatch-transport-boundary", "active"),
         ("research-job-quota-ledger", "research-job-quota-ledger", "active"),
         ("stateful-service-migrations", "stateful-service-migrations", "active"),
