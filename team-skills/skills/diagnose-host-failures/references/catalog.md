@@ -130,6 +130,22 @@ proveniência de cada caso não é estabelecida por este catálogo.
 - **Sonda:** com autorização para inspecionar a identidade do serviço, identifica as fontes reais e calcula primeiro fingerprints das chaves públicas (`ssh-keygen -lf PUBLIC_KEY`). Se for necessário ler uma chave privada para obter a chave pública/fingerprint, exige autorização explícita para essa leitura; nunca mostres o conteúdo privado.
 - **Correção:** só alterar o fornecedor remoto com autorização explícita. Antes de registar a chave, confirma pelo fingerprint que é a chave de serviço pretendida e limita as permissões ao necessário. Nunca mostres nem copies o conteúdo privado.
 
+## Base de dados e workers sob limites
+
+### `SQLSTATE 53100` numa query grande dentro de um contentor PostgreSQL
+- **Sintoma:** `could not resize shared memory segment "…" to N bytes: No space left on device` (SQLSTATE 53100) numa query com joins largos sobre muitas linhas; a mesma query termina sem erro numa base pequena.
+- **Pré-condição:** PostgreSQL num contentor com o `/dev/shm` por omissão (64 MB no Docker) e planos com hash joins paralelos. Confirma o tamanho do `/dev/shm` do contentor e o plano.
+- **Causa possível:** os workers paralelos partilham estado por memória partilhada dinâmica, que vive no `/dev/shm` do contentor.
+- **Sonda:** repetir a query só em leitura, na mesma role e com o mesmo timeout, com e sem `SET LOCAL max_parallel_workers_per_gather=0`; comparar o SQLSTATE e a duração.
+- **Correção:** para queries de auditoria ou verificação, correr em série dentro da própria transação (`SET LOCAL`, sem mudar a configuração global). A correção de fundo é aumentar o `shm_size` do contentor, o que obriga a reiniciar o PostgreSQL e exige uma decisão própria.
+
+### Worker no limite de memória a encher a swap do host
+- **Sintoma:** o processo de um flow fica com o RSS no `MemoryMax` da unit, a swap do host cresce depressa e a unit regista muitos eventos `memory.max` sem OOM kill.
+- **Pré-condição:** unit com `MemoryMax` mas sem `MemorySwapMax`; builder que carrega um conjunto inteiro de linhas para objetos Python.
+- **Causa possível:** o cgroup limita a RAM mas não a swap, por isso o processo continua a crescer em swap, que é partilhada com a base de dados e outros serviços.
+- **Sonda:** `MemoryCurrent`, `MemoryPeak`, `MemorySwapCurrent` e `memory.events` da unit; RSS e `VmSwap` do processo do flow.
+- **Correção:** cancelar o próprio run e, se não terminar, só o processo com identidade provada. Depois: `MemorySwapMax` pequeno na unit do worker (falha contida em vez de pressão no host) e carregamento por lotes no builder, provado com volume proporcional ao de produção.
+
 ## Fontes para as correções de lifecycle
 
 Consultadas em 19/10/2026; confirma a documentação da versão instalada: [systemd.unit — garbage collection](https://www.freedesktop.org/software/systemd/man/latest/systemd.unit.html#Unit%20Garbage%20Collection) e [systemd.service — RemainAfterExit](https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html#RemainAfterExit=). Os exemplos de workers continuam a depender do contrato do backend real.

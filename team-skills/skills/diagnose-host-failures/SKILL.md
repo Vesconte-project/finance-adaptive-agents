@@ -10,7 +10,7 @@ Confirma primeiro que o sistema, a identidade e o sintoma correspondem à
 entrada. As sondas e correções dependem do ambiente e não concedem autorização
 para aceder ao host, contactar serviços remotos ou alterar estado.
 
-O catálogo completo está em `references/catalog.md` e contém 18 entradas.
+O catálogo completo está em `references/catalog.md` e contém 20 entradas.
 
 ## Índice por sintoma
 
@@ -45,6 +45,10 @@ atribui a causa só pelo sintoma.
 
 **Aplicações**
 - O serviço está vivo, a API responde, e o dashboard dá 404 → possível tentativa de escrita no pacote instalado; confirmar logs.
+
+**Base de dados e workers sob limites**
+- `SQLSTATE 53100` (`could not resize shared memory segment … No space left on device`) numa query grande → possível `/dev/shm` pequeno no contentor PostgreSQL com paralelismo.
+- Um worker de Python preso no limite de memória e a crescer em swap → possível carregamento de um conjunto inteiro em objetos Python; confirmar o pico e o limite de swap da unit.
 
 **Serviços e estado instalado**
 - `InvocationID` vazio logo após a unit correr → possível descarga do estado; confirmar lifecycle e referências.

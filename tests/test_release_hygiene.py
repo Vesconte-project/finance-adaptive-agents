@@ -94,6 +94,7 @@ def test_canonical_skill_catalog_is_safe_and_portable():
             "public-projections-of-confidential-data",
             "active",
         ),
+        ("public-site-crawler-backpressure", "public-site-crawler-backpressure", "active"),
         ("research-dispatch-transport-boundary", "research-dispatch-transport-boundary", "active"),
         ("research-job-quota-ledger", "research-job-quota-ledger", "active"),
         ("stateful-service-migrations", "stateful-service-migrations", "active"),
@@ -106,6 +107,11 @@ def test_canonical_skill_catalog_is_safe_and_portable():
         (
             "systemd-service-exit-and-oom-semantics",
             "systemd-service-exit-and-oom-semantics",
+            "active",
+        ),
+        (
+            "vercel-cloudflare-production-surface",
+            "vercel-cloudflare-production-surface",
             "active",
         ),
         ("verify-against-the-host", "verify-against-the-host", "active"),

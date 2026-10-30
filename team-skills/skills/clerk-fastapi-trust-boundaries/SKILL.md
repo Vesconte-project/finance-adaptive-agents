@@ -20,6 +20,30 @@ Direct browser -> Cloudflare -> FastAPI with an HTTP bearer authorization header
 
 Do not use Access human login as a drop-in replacement for Clerk on browser-facing APIs; test `OPTIONS` preflight and authentication. For cookie-authenticated BFF mutations, test CSRF; for bearer APIs, test XSS/token exposure and CORS. SSE with native `EventSource` has different header capabilities from authenticated `fetch` streaming.
 
+## BFF-asserted visitor IP behind Cloudflare Access
+
+When a BFF forwards the end visitor's IP (for rate limiting or abuse controls) and the
+backend accepts it only together with a valid Cloudflare Access JWT, the acceptance path
+usually **falls back silently** to the connection address on any failure. Behind a
+serverless BFF that address is the platform's egress IP, so every anonymous visitor
+shares one bucket and the public site degrades into `429` responses without any
+authentication error being logged.
+
+- Compare the Access JWT `iss` exactly with the configured issuer. A trailing slash
+  (`https://<team>.cloudflareaccess.com/` versus `https://<team>.cloudflareaccess.com`)
+  is enough to reject every assertion. Normalize or validate the configured value at
+  the point where configuration is rendered, not only in the verifier.
+- Provision the Access signing keys from the team's fixed certificate endpoint and
+  refresh them outside the request path. Cloudflare rotates them periodically with an
+  overlap window; a static JWKS eventually rejects every assertion.
+- Check the audience against the specific Access application's AUD tag.
+- Count rejection reasons in aggregate (missing headers, format, timestamp, HMAC, JWT
+  issuer/audience/kid), without values, so the failing stage is visible.
+- In functional proofs, use the IP family the browser actually uses. If the public site
+  has only an A record, a visitor's IPv6 address from a "what is my IP" page will never
+  match the proof the BFF sends. Mobile carrier-grade NAT may also present a different
+  public IPv4 per connection; prefer a second fixed network for two-visitor proofs.
+
 ## Verification and stop conditions
 
 1. Trace one request end-to-end, collecting sanitized routing, token type, instance ID, service identity, and final authorization decision; never record bearer tokens.
