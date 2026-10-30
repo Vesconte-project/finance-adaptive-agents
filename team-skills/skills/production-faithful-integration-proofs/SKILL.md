@@ -1,6 +1,6 @@
 ---
 name: production-faithful-integration-proofs
-description: Desenhar ou interpretar uma prova de integração descartável (CI, contentores, base efémera), ou os testes de um helper operacional que vai correr em produção, quando o resultado vai decidir uma alteração real como um pool de ligações, autenticação entre serviços, rede, permissões, migrações ou um corte. Usa quando uma prova destas falha ou passa e é preciso saber se a conclusão vale para produção. Não para testes unitários de lógica pura nem para provas sem consequência em produção.
+description: Desenhar ou interpretar uma prova de integração descartável (CI, contentores, base efémera), um dryrun só de leitura autorizado contra o alvo real, ou os testes de um helper operacional que vai correr em produção, quando o resultado vai decidir uma alteração real como um pool de ligações, autenticação entre serviços, rede, permissões, migrações ou um corte. Usa quando uma prova destas falha ou passa e é preciso saber se a conclusão vale para produção. Não para testes unitários de lógica pura nem para provas sem consequência em produção.
 ---
 
 # Uma prova só vale nas dimensões que reproduz
@@ -17,6 +17,13 @@ o pooler partilhava o namespace de rede da base e chegava por loopback, onde
 as regras de acesso eram diferentes; a prova punha-os em redes separadas. Com a
 topologia de produção reproduzida, a mesma versão passou. O problema era da
 prova.
+
+## Dryrun autorizado contra o alvo real
+
+Para comparar um loader de PR com o instalado usando apenas leitura autorizada,
+lê [references/pinned-read-only-pr-probes.md](references/pinned-read-only-pr-probes.md).
+Fixa código e SELECT, usa a identidade real e declara os limites da prova;
+extração por AST não é sandbox e uma transação READ ONLY não contém código hostil.
 
 ## Antes de concluir, confirma as dimensões
 

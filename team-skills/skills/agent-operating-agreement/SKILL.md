@@ -1,6 +1,6 @@
 ---
 name: agent-operating-agreement
-description: Definir um acordo de trabalho para um agente que vai planear alterações autorizadas num servidor Linux de produção partilhado, incluindo revisão, verificações no host e reporte ao operador. Usa quando o utilizador pede explicitamente esse acordo; não para tarefas locais ou infraestrutura de desenvolvimento.
+description: Definir um acordo de trabalho para um agente que vai planear alterações autorizadas num servidor Linux de produção partilhado, incluindo revisão, verificações no host e reporte ao operador. Usa quando o utilizador pede esse acordo ou um handoff entre implementação, observação do host e revisão dentro de um acordo já adotado; não para tarefas locais ou infraestrutura de desenvolvimento.
 ---
 
 # Acordo de trabalho para um agente em produção
@@ -77,6 +77,14 @@ custa-lhe contexto e tempo.
 - Apagar dados, artefactos ou releases sem inventário e confirmação explícita.
 - Corrigir à mão no host algo que o script do lote vai verificar por hash: cria
   drift e faz falhar o lote seguinte.
+
+## Passar trabalho entre agentes
+
+Para handoffs entre implementação, host, revisor e operador, lê
+[references/cross-agent-handoffs-and-evidence.md](references/cross-agent-handoffs-and-evidence.md).
+A mensagem deve funcionar sem memória do chat, separar factos de hipóteses e
+identificar o resultado realmente persistido. Usa os registos existentes e o
+resultado automático de deploy quando ele já prova o critério necessário.
 
 ## Rever trabalho de outro agente
 

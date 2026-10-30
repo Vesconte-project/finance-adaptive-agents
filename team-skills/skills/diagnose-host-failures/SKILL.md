@@ -1,6 +1,6 @@
 ---
 name: diagnose-host-failures
-description: Catálogo de padrões de falha operacional em hosts Linux de produção, com foco em ciclo de vida de serviços, identidade, permissões e execução de workers. Usa quando um incidente concreto nesses componentes corresponde a um exemplo; não para falhas genéricas de CI, alertas, agendamentos ou scanners.
+description: Catálogo de padrões de falha operacional em hosts Linux de produção, com foco em ciclo de vida de serviços, identidade, permissões e execução de workers. Usa quando um incidente concreto nesses componentes corresponde a um exemplo ou exige recolha privilegiada de metadados; não para falhas genéricas de CI, alertas, agendamentos ou scanners.
 ---
 
 # Diagnosticar falhas de host
@@ -54,6 +54,13 @@ atribui a causa só pelo sintoma.
 - `InvocationID` vazio logo após a unit correr → possível descarga do estado; confirmar lifecycle e referências.
 - `baseline drift` num lote cujo alvo já está instalado → possível sobreposição de instalações com baseline no mesmo ficheiro.
 - Deploy falha com `exit status 128` e o serviço não pode reiniciar → possível remoção de uma chave necessária ao clone de arranque.
+
+## Leitura privilegiada de metadados
+
+Quando o diagnóstico precisa de um leitor privilegiado autorizado, lê
+[references/sealed-read-only-readers.md](references/sealed-read-only-readers.md):
+selagem, admissão atual, identidade efetiva, transação só de leitura e saída por
+allowlist. Leitura da base não autoriza alterações nem contacto a fornecedores.
 
 ## Como usar
 

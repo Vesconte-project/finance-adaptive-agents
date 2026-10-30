@@ -113,6 +113,11 @@ Se esses blocos pedirem interação ou parecerem parados, lê
 antes de os repetir. Para uma retirada destrutiva falhada ou repartida por
 tentativas, lê [references/destructive-retirement-accounting.md](references/destructive-retirement-accounting.md).
 
+Para manutenção com pausa de produtores e recuperação de privilégios, lê
+[references/maintenance-pool-fencing-and-resume.md](references/maintenance-pool-fencing-and-resume.md).
+Preserva schedules e ocorrências quando a pausa é dos pools; a retoma é parte da
+operação e um GRANT compensatório não desfaz o marcador de uma migração.
+
 ## Dois lotes que tocam no mesmo ficheiro
 
 Uma implementação errada pode verificar um baseline fixo mas instalar a fonte
