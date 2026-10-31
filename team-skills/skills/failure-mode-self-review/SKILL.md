@@ -81,6 +81,9 @@ uma linha por pergunta relevante: o risco, o que fizeste e como está provado (o
 contra o host ou o dryrun). Marca o que fica por provar e quem o prova. Isto não substitui a
 revisão independente. Serve para o revisor discutir o que é difícil, não o que era previsível.
 
+Para um exemplo completo da secção e de como chegar a ela, lê
+[references/exemplo-seccao-pr.md](references/exemplo-seccao-pr.md).
+
 ## Sinais de que a autorrevisão foi superficial
 
 - Todas as respostas são "os testes passam".

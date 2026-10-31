@@ -43,6 +43,9 @@ veredito que diz o que bloqueia, o que é só para saber e o que o humano tem de
    numa linha, as correções numeradas com os testes esperados e o que não fazer. Sem pedir
    mais do que o necessário para a decisão.
 
+Para o modelo do veredito, da mensagem de volta e das regras de severidade, lê
+[references/modelo-veredito.md](references/modelo-veredito.md).
+
 ## O que a revisão não faz
 
 Não aprova o que não leu nem o que não conseguiu reproduzir; nesse caso diz isso mesmo. Não

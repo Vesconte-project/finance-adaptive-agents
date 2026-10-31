@@ -45,6 +45,10 @@ para o próximo; corrigir só o sintoma esconde as duas.
 7. **Prova com o caso real.** A correção deve demonstrar, contra os dados ou o cenário real (em
    leitura ou em dryrun), que os afetados recuperam e que nenhum outro é afetado.
 
+Para um exemplo completo passo a passo, um modelo de nota de investigação e as perguntas que
+desbloqueiam uma investigação parada, lê
+[references/exemplo-e-modelo.md](references/exemplo-e-modelo.md).
+
 ## O que não fazer
 
 - Baixar um limiar, acrescentar tolerância, corrigir um fuso ou apagar linhas sem saber que

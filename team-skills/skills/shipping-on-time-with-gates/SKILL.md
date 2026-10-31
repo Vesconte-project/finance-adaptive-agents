@@ -49,6 +49,10 @@ rollback e janelas.
 8. **Diz a hora em cada mensagem que depende dela.** Por exemplo: "faz merge entre as 20:15 e as
    21:15 UTC", "corre antes das 17:35". O dono não deve ter de calcular janelas.
 
+Para exemplos com horas reais (uma correção antes de uma run noturna, uma instalação com inputs
+em falta, a preparação de véspera) e um modelo de planeamento, lê
+[references/exemplos-e-modelo.md](references/exemplos-e-modelo.md).
+
 ## O que não é aceitável
 
 - "Fica para amanhã" sem a hora nova, o motivo concreto e o que fica preparado hoje.
