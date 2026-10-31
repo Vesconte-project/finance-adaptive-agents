@@ -77,6 +77,12 @@ def test_canonical_skill_catalog_is_safe_and_portable():
         ("healthchecks-io-job-alerting", "healthchecks-io-job-alerting", "active"),
         ("host-mutation-batches", "host-mutation-batches", "active"),
         ("immutable-deploys-single-host", "immutable-deploys-single-host", "active"),
+        (
+            "incident-latent-condition-and-trigger",
+            "incident-latent-condition-and-trigger",
+            "active",
+        ),
+        ("independent-review-of-agent-work", "independent-review-of-agent-work", "active"),
         ("jira-data-center-operations", "jira-data-center-operations", "active"),
         ("lets-encrypt-dns01-octodns-renewal", "lets-encrypt-dns01-octodns-renewal", "active"),
         ("mcp-api-capability-triage", "mcp-api-capability-triage", "active"),
@@ -105,6 +111,7 @@ def test_canonical_skill_catalog_is_safe_and_portable():
         ("registry-selection-changes", "registry-selection-changes", "active"),
         ("research-dispatch-transport-boundary", "research-dispatch-transport-boundary", "active"),
         ("research-job-quota-ledger", "research-job-quota-ledger", "active"),
+        ("shipping-on-time-with-gates", "shipping-on-time-with-gates", "active"),
         ("stateful-service-migrations", "stateful-service-migrations", "active"),
         ("stripe-entitlement-reconciliation", "stripe-entitlement-reconciliation", "active"),
         (
