@@ -70,6 +70,7 @@ def test_canonical_skill_catalog_is_safe_and_portable():
             "enforceable-invariants-for-agent-code",
             "active",
         ),
+        ("failure-mode-self-review", "failure-mode-self-review", "active"),
         ("finance-production-release-channel", "finance-production-release-channel", "active"),
         ("greenfield-host-setup", "greenfield-host-setup", "active"),
         ("guards-that-pass-blindly", "guards-that-pass-blindly", "active"),
