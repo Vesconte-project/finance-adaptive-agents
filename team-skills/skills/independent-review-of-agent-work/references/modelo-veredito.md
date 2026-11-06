@@ -1,5 +1,10 @@
 # Modelo de veredito e mensagem de volta
 
+Os modelos são exemplos para um PR Git. Adapta o identificador a relatórios ou blocos e
+omite os campos sem aplicação, indicando os limites relevantes. Não declares reproduções
+que não fizeste: distingue execução própria de recibos verificados ou reutilizados. Ações
+no host, dados reais, credenciais e janelas dependem da autorização e do contexto existentes.
+
 ## Veredito para o dono
 
 ```markdown

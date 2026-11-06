@@ -53,6 +53,11 @@ todas as setas. Inspeciona os valores intermédios para localizar a perda, mas a
 a decisão final. Uma nova observação explicitamente validada pode mudar a decisão; o simples
 descarte de linhas não demonstra que a rejeição original deixou de ser relevante.
 
+Confirma que o caso chega ao predicado que queres provar. Se outro guard bloquear primeiro,
+o teste negativo pode passar sem testar a propagação da evidência. Quando isso for relevante,
+escolhe um item que pertença também às chaves candidatas da operação e verifica a causa da
+recusa. Não retires os restantes guards para forçar o resultado; mantém um controlo válido.
+
 ## Transportar significado, não apenas contagens
 
 Mantém separadas a qualidade observada antes do descarte e a forma dos dados sobreviventes.
