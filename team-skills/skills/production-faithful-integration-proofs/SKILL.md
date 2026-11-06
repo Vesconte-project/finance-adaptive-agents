@@ -1,9 +1,11 @@
 ---
 name: production-faithful-integration-proofs
-description: Desenhar ou interpretar uma prova de integração descartável (CI, contentores, base efémera), um dryrun só de leitura autorizado contra o alvo real, ou os testes de um helper operacional que vai correr em produção, quando o resultado vai decidir uma alteração real como um pool de ligações, autenticação entre serviços, rede, permissões, migrações ou um corte. Usa quando uma prova destas falha ou passa e é preciso saber se a conclusão vale para produção. Não para testes unitários de lógica pura nem para provas sem consequência em produção.
+description: Desenhar ou interpretar provas de integração descartáveis, dryruns de leitura autorizados ou testes de helpers operacionais quando o resultado decide uma alteração real em produção. Usa para avaliar se topologia, autenticação, permissões, estado, formas de dados e contratos produtor–consumidor sustentam a conclusão. Não para testes unitários de lógica pura nem provas sem consequência em produção.
 ---
 
 # Uma prova só vale nas dimensões que reproduz
+
+As instruções orientam a prova; não concedem autorização para aceder ao alvo, alterar dados, instalar ou publicar.
 
 Uma prova descartável é evidência sobre o ambiente que montou. Se a topologia,
 a autenticação ou o estado diferirem de produção, a prova pode **falhar por
@@ -11,12 +13,12 @@ uma razão que não existe em produção** ou **passar por uma razão que não s
 aplica lá**. As duas levam a decisões erradas: abandonar uma versão que
 funcionava, ou instalar uma que vai falhar.
 
-Caso real: um pooler de ligações parecia não autenticar com o pool frio numa
-versão nova, e chegou a discutir-se construir uma imagem própria. Em produção,
-o pooler partilhava o namespace de rede da base e chegava por loopback, onde
-as regras de acesso eram diferentes; a prova punha-os em redes separadas. Com a
-topologia de produção reproduzida, a mesma versão passou. O problema era da
-prova.
+Num caso operacional relatado, um pooler de ligações parecia não autenticar
+com o pool frio numa versão nova, e chegou a discutir-se construir uma imagem
+própria. Em produção, o pooler partilhava o namespace de rede da base e chegava
+por loopback, onde as regras de acesso eram diferentes; a prova punha-os em
+redes separadas. Segundo a evidência fornecida, com a topologia de produção
+reproduzida, a mesma versão passou. O problema estava na prova.
 
 ## Dryrun autorizado contra o alvo real
 
@@ -24,6 +26,14 @@ Para comparar um loader de PR com o instalado usando apenas leitura autorizada,
 lê [references/pinned-read-only-pr-probes.md](references/pinned-read-only-pr-probes.md).
 Fixa código e SELECT, usa a identidade real e declara os limites da prova;
 extração por AST não é sandbox e uma transação READ ONLY não contém código hostil.
+
+## Evidência que se perde entre componentes
+
+Numa prova abrangida pelo âmbito desta Skill, quando uma normalização, descarte,
+relatório ou resolução de identidade pode mudar uma decisão de validação ou autorização,
+lê [references/evidence-through-transformations.md](references/evidence-through-transformations.md).
+Mapeia a observação até à decisão e liga a saída real do produtor ao consumidor real:
+um teste isolado de rejeição não prova que essa rejeição chegou ao gate final.
 
 ## Antes de concluir, confirma as dimensões
 
@@ -38,8 +48,8 @@ irrelevante para a decisão:
 - **Estado existente:** formato das credenciais já criadas, ficheiros mistos
   (entradas antigas e novas), versões de schema de partida, permissões já
   concedidas.
-- **Forma dos dados:** dados sintéticos com a mesma forma que o código vai
-  encontrar (histórico suficiente, todas as combinações que produção tem).
+- **Forma dos dados:** dados sintéticos com as formas relevantes que o código
+  vai encontrar, incluindo histórico suficiente e combinações adversariais.
   Nunca dados reais de utilizadores.
 - **Versões e identidades:** versão/digest real, entrypoint, UID/GID, roles e
   privilégios efetivos em cada salto. Não pressuponhas root nem non-root;
@@ -69,51 +79,54 @@ irrelevante para a decisão:
 
 Um helper escrito para uma janela de produção costuma ser testado com o sistema,
 a base e o HTTP simulados. Esses testes provam a lógica do helper, não os
-contratos com o que está instalado. Numa mesma noite (20/10/2026), helpers com
-dezenas de testes verdes falharam cinco vezes em produção, sempre por uma
-expectativa escrita à mão:
+contratos com o que está instalado. A evidência operacional fornecida relata
+helpers com testes verdes que falharam por expectativas escritas à mão:
 
-- um campo lido de um checkpoint que a função publicada não devolve
+- um campo lido de um checkpoint que a função publicada não devolvia
   (o teste usava um dicionário inventado com esse campo);
 - um ficheiro de credenciais do pooler tratado como `root:root 0600` quando era
   `root:<grupo-do-pooler> 0640` (os testes simulavam a verificação de
   permissões como identidade);
-- uma sonda com um parâmetro de arranque que o pooler recusa (a ligação era
+- uma sonda com um parâmetro de arranque que o pooler recusava (a ligação era
   simulada);
-- uma contagem fixa de verificações que mudara nesse dia com um consumidor novo;
+- uma contagem fixa de verificações que mudara com um consumidor novo;
 - `404` esperado em rotas retiradas com uma credencial de serviço a que o
-  servidor responde `403`, que é o comportamento correto.
+  servidor respondia corretamente `403` naquele contrato.
 
-Regras que teriam apanhado os cinco:
+Verificações dirigidas a essas falhas:
 
 - **Formas reais:** gera as estruturas de entrada com as funções publicadas
-  (ou de amostras reais só com metadados), em vez de dicionários feitos à mão.
-- **Inventário de ficheiros:** dono, grupo e modo dos ficheiros que o helper
-  verifica ou restaura vêm de um inventário confirmado no alvo e são usados nos
-  testes, incluindo o restauro (que não pode impor `0600` a um ficheiro que um
-  serviço precisa de ler).
+  ou com amostras autorizadas e sanitizadas só de metadados, em vez de
+  dicionários feitos à mão.
+- **Inventário de ficheiros:** usa dono, grupo e modo confirmados no alvo
+  apenas com autorização e acesso já concedidos, em leitura. Sem esse acesso,
+  usa evidência sanitizada disponível e declara o inventário por confirmar.
+  Leva essas propriedades aos testes, incluindo o restauro, que não pode impor
+  `0600` a um ficheiro que um serviço precisa de ler.
 - **Contagens e listas derivadas** da configuração instalada, com comparação
-  do conjunto exato, nunca de constantes.
+  do conjunto exato, em vez de constantes escritas à mão.
 - **Contratos de protocolo** (respostas HTTP, parâmetros aceites por um pooler)
-  tirados dos testes ou da configuração do dono no SHA fixado, ou provados contra
-  o componente real com essa configuração.
+  tirados dos testes ou da configuração do componente responsável na revisão
+  fixada, ou provados contra o componente real com essa configuração.
 - **Ponta a ponta por ação:** cada ação do CLI tem pelo menos um teste que a
   corre inteira com as fronteiras simuladas, não só as funções intermédias.
-- **Simuladores estritos:** um `systemctl`, `psql` ou CLI simulado recusa as
-  opções e os formatos que a versão instalada recusa. Um simulador que aceita
-  tudo deixou passar `systemctl --utc show`, que o systemd 259 já não aceita, e
-  o instalador só falhou em produção.
-- **Volume proporcional:** provas de memória e de tempo usam volumes da ordem dos
-  de produção (por exemplo, todas as empresas com todo o histórico de
-  demonstrativos), não amostras pequenas. Um builder que carregava 1,36 milhões
-  de linhas de uma vez passou nos testes e excedeu o limite de memória no
-  primeiro run real.
+- **Simuladores estritos:** um `systemctl`, `psql` ou CLI simulado deve refletir
+  as opções e os formatos da interface instalada. Foi relatada uma divergência
+  em que o simulador aceitou `systemctl --utc show` e o CLI real recusou a
+  invocação. Isso não estabelece uma regra universal por versão; verifica a
+  interface efetiva antes de codificar a expectativa no simulador.
+- **Volume proporcional:** provas de memória e de tempo usam volumes da ordem
+  dos relevantes em produção, incluindo o histórico necessário. Foi relatado
+  um builder que carregava o histórico inteiro, passava com amostras pequenas
+  e excedeu o limite de memória na execução real.
 - **Conteúdo esperado do commit instalado:** quando um helper fixa os ficheiros
-  esperados de uma release, tira-os da árvore do merge realmente instalado, nunca
-  da cabeça de um PR. Dois PRs com a mesma base não se incluem um ao outro.
+  esperados de uma release, tira-os da árvore do merge realmente instalado,
+  nunca da cabeça de um PR. Dois PRs com a mesma base não se incluem um ao outro.
 
 Quando um destes testes passa, a conclusão é "a lógica está certa para as
 formas que o teste usou". Diz quais formas foram reais e quais foram assumidas.
+Os relatos acima motivam as verificações; este pacote não inclui uma suite
+independentemente executável que os reproduza.
 
 ## Sinais de que a prova está a mentir
 
@@ -125,11 +138,16 @@ formas que o teste usou". Diz quais formas foram reais e quais foram assumidas.
 - Testes verdes de um helper cujas entradas, permissões ou respostas foram
   todas escritas pelo próprio autor do helper.
 
+Estes sinais justificam investigar a fidelidade da prova; isoladamente, não
+estabelecem que o código ou a prova estejam errados.
+
 ## Quando não aplicar
 
-Se a decisão não depender do ambiente (lógica pura, parsing, cálculos), um
-teste unitário chega. O custo de reproduzir produção justifica-se quando a
-conclusão autoriza ou bloqueia uma alteração real.
+Se a decisão depender apenas de lógica pura, parsing ou cálculos, usa testes
+unitários adequados. Uma divergência entre produtor e consumidor pode exigir
+uma prova dessa fronteira sem reproduzir toda a infraestrutura. O custo de
+reproduzir dimensões de produção justifica-se quando elas condicionam a decisão
+sobre uma alteração real.
 
 ## Relacionadas (leitura opcional, se disponíveis)
 

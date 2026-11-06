@@ -4,6 +4,10 @@ Usa quando testes sintéticos passaram mas a decisão depende de permissões ou 
 que os dados existentes podem conter. A prova complementa testes descartáveis; não deve
 contactar o fornecedor nem executar mutações para simular o resultado que se deseja.
 
+Executa a sonda apenas se a autorização existente abranger esse alvo, a identidade efetiva
+e a execução desse código em leitura. A Skill não concede esse acesso. Sem esse âmbito,
+usa evidência sanitizada disponível e declara as permissões e combinações por verificar.
+
 ## Fixar o código que realmente está a ser provado
 
 1. Fixa o head revisto e a baseline instalada, com todas as dependências necessárias;
@@ -14,7 +18,7 @@ contactar o fornecedor nem executar mutações para simular o resultado que se d
    Reimplementar a regra ou projetar menos colunas pode esconder precisamente a falha
    de permissões que a nova versão teria. Projeta o segredo/referência em booleanos no
    próprio SQL quando esse é o contrato real; não o exponhas no resultado.
-3. Uma opção observada foi extrair o corpo do loader por AST, sem o alterar, e adaptar
+3. Uma opção relatada foi extrair o corpo do loader por AST, sem o alterar, e adaptar
    apenas a função de acesso à base para uma transação `READ ONLY` já aberta. O adaptador
    recusava queries/argumentos diferentes do SELECT fixado. O resolver e as dependências
    puras vieram do mesmo commit e correram com a identidade do worker.
@@ -23,7 +27,10 @@ Extração por AST não é sandbox nem prova automática de equivalência. Confi
 decorators, imports, closures e estado de módulo de que a função depende. Se alterares a
 inicialização ou uma dependência necessária, limita a conclusão ou usa outra prova
 controlada. Um read-only da base não impede HTTP, escrita de ficheiros ou criação de jobs;
-nenhum caminho desses deve ser chamado pela sonda. O URI fica apenas em memória.
+revê os caminhos alcançáveis antes da execução para excluir esses efeitos. Quando viável,
+isola o processo, restringindo escritas e ligações ao necessário para a leitura autorizada
+da base. Não executes código hostil ou de efeitos incertos apenas por estar numa transação
+READ ONLY. O URI fica apenas em memória e não deve aparecer nos relatórios.
 
 ## Comparar o pipeline de seleção, não só o loader
 
@@ -51,19 +58,23 @@ na baseline mudaria o comportamento que se pretende medir.
 - Contar checkpoints atuais num gate é uma simulação estática. Uma run posterior ainda
   pode atualizar, limpar ou criar retenções; o resultado não prevê a resposta futura
   do fornecedor nem a prontidão do deploy.
-- Usa códigos de erro por fase e preserva o relatório completo sanitizado. Não devolvas
-  chaves internas, referências, notas livres ou valores de negócio; o relatório técnico
-  também não concede autorização de merge ou de instalação.
+- Usa códigos de erro por fase e preserva o relatório completo sanitizado apenas num
+  destino apropriado e autorizado. Não devolvas chaves internas, referências, notas
+  livres ou valores de negócio; o relatório técnico também não concede autorização
+  de merge ou de instalação.
 
 ## Evidência e alcance
 
-Caso em `finance-data-ops`, **30/10/2026**, [PR #48](https://github.com/Vesconte-project/finance-data-ops/pull/48):
-uma primeira prova do head encontrou 58 entradas e oito saídas não desejadas. A repetição
-no head revisto encontrou as mesmas 58 entradas, zero saídas e zero bloqueados. As oito
-mantiveram-se incluídas, com oito conflitos em agregado. As provas executaram os SELECTs
-fixados e confirmaram a identidade e o modo de leitura; não fizeram pedidos ao fornecedor.
+Num caso fornecido sobre um PR num repositório de ingestão de dados, uma primeira prova
+do head encontrou saídas não desejadas. A repetição no head revisto preservou o mesmo
+universo de entrada e deixou de produzir essas saídas ou bloqueados. As entidades afetadas
+mantiveram-se incluídas, mas os conflitos só estavam apresentados em agregado. Segundo o
+relato, as provas executaram os SELECTs fixados e confirmaram a identidade e o modo de
+leitura; não fizeram pedidos ao fornecedor. Este pacote não inclui uma reprodução
+independentemente executável dessas sondas.
 
-Na mesma investigação, o orçamento de uma run regional registara dez retenções e o
-agregado posterior 510 nessa região. Transportar os checkpoints do agregado para um
-dry-run não era prova de que a próxima run teria 510 falhas. Este caso sustenta as
-fronteiras de atribuição, não uma política universal de seleção ou de tolerância a dados.
+Na mesma investigação, uma execução regional registara menos retenções do que o agregado
+observado posteriormente. Transportar os checkpoints desse agregado para um dryrun não
+provava que a próxima execução teria o mesmo número de falhas. Este caso sustenta as
+fronteiras de atribuição entre snapshot, execução histórica e previsão; não estabelece
+uma política universal de seleção ou de tolerância a dados.
