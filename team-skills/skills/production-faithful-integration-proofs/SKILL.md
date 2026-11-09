@@ -37,6 +37,12 @@ um teste isolado de rejeição não prova que essa rejeição chegou ao gate fin
 
 ## Antes de concluir, confirma as dimensões
 
+Se a decisão depende de um instalador empacotado ou de um consumidor com outra
+identidade, lê [references/artifact-roundtrip-and-consumer-identity.md](references/artifact-roundtrip-and-consumer-identity.md).
+O checkout e uma leitura como root não provam o pacote extraído nem o acesso do
+serviço. Para leitores Python privilegiados e URLs PostgreSQL construídos pela
+sonda, lê [references/privileged-python-and-libpq-probes.md](references/privileged-python-and-libpq-probes.md).
+
 Para cada uma, pergunta se a prova reproduz produção ou se a diferença é
 irrelevante para a decisão:
 
