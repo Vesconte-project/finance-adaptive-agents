@@ -99,6 +99,12 @@ rollback seguro com outras mudanças.
 
 ## Template
 
+Quando a operação usa um pacote de instalação preparado antes da janela, ou
+falhou depois de produzir efeitos mas antes do recibo final, lê
+[references/prebuilt-installers-and-receipt-gaps.md](references/prebuilt-installers-and-receipt-gaps.md).
+Distingue preparar o instalador de observar o alvo; falta de recibo não prova
+que o passo não aconteceu.
+
 Para desenhar o script, usa o contrato em
 [references/batch-script-contract.md](references/batch-script-contract.md). O
 script efetivo pertence ao repositório de infraestrutura do host e precisa de
