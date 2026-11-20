@@ -14,6 +14,7 @@ from finance_adaptive_agents.team_skills.repository import TeamSkillsError
 
 from .evidence import RepositorySkillsEvidence
 from .isolation import codex_isolation_arguments
+from .process_environment import model_environment
 
 
 @dataclass(frozen=True)
@@ -151,10 +152,6 @@ def build_selection_prompt(request: Mapping[str, object]) -> str:
     )
 
 
-def _environment() -> dict[str, str]:
-    return dict(os.environ)
-
-
 def _last_error(stderr: str, fallback: str) -> str:
     return stderr.strip().splitlines()[-1] if stderr.strip() else fallback
 
@@ -218,7 +215,7 @@ class CodexSkillSelector:
                     stderr=subprocess.PIPE,
                     text=True,
                     timeout=self.timeout_seconds,
-                    env=_environment(),
+                    env=model_environment("codex"),
                     input=prompt,
                 )
             except (FileNotFoundError, subprocess.TimeoutExpired) as error:
@@ -291,7 +288,7 @@ class ClaudeSkillSelector:
                     stderr=subprocess.PIPE,
                     text=True,
                     timeout=self.timeout_seconds,
-                    env=_environment(),
+                    env=model_environment("claude"),
                     input=prompt,
                 )
             except (FileNotFoundError, subprocess.TimeoutExpired) as error:
@@ -357,7 +354,7 @@ class CopilotSkillSelector:
             "--no-experimental",
             "--available-tools=",
         ]
-        environment = _environment()
+        environment = model_environment("copilot")
         environment.update({
             "GITHUB_COPILOT_PROMPT_MODE_EXTENSIONS": "false",
             "GITHUB_COPILOT_PROMPT_MODE_REPO_HOOKS": "false",
