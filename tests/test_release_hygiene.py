@@ -16,7 +16,7 @@ def test_distribution_version_and_product_metadata_are_consistent():
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
 
     assert project["name"] == "finance-adaptive-agents"
-    assert project["version"] == __version__ == "0.22.1"
+    assert project["version"] == __version__ == "0.23.0"
     assert project["readme"] == "README.md"
     assert project["scripts"]["team-skills"] == (
         "finance_adaptive_agents.team_skills.cli:main"
@@ -124,6 +124,7 @@ def test_canonical_skill_catalog_is_safe_and_portable():
             "systemd-service-exit-and-oom-semantics",
             "active",
         ),
+        ("topic-investigation-depth", "topic-investigation-depth", "active"),
         (
             "vercel-cloudflare-production-surface",
             "vercel-cloudflare-production-surface",
