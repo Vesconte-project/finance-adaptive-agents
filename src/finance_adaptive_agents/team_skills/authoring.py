@@ -24,6 +24,7 @@ from .skill_validation import SkillCandidate, load_candidate, validate_skill
 from .source import GitKnowledgeSource
 from .storage import user_data_root
 from .isolation import codex_isolation_arguments
+from .process_environment import model_environment
 
 
 # Separate from the routing task limit. Reject excess explicitly; never summarize or truncate.
@@ -145,7 +146,7 @@ def invoke_author(provider: str, request: dict, schema: dict) -> object:
               + "\nInput:\n" + json.dumps(request, ensure_ascii=False))
     if len(prompt.encode("utf-8")) > MAX_REQUEST_BYTES:
         raise TeamSkillsError("author request exceeds its byte budget; nothing was truncated or sent")
-    environment = dict(os.environ)
+    environment = model_environment(provider)
     with tempfile.TemporaryDirectory(prefix="team-skills-author-") as temporary:
         root = Path(temporary)
         output = root / "result.json"
