@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import json
-import os
 import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 
 from .repository import TeamSkillsError
+from .process_environment import model_environment
 from .skill_validation import SkillCandidate
 
 
@@ -129,7 +129,7 @@ def assess_with_codex(candidate: SkillCandidate, executable: str = "codex", time
                     str(output_path), prompt,
                 ],
                 cwd=root, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
-                timeout=timeout_seconds,
+                timeout=timeout_seconds, env=model_environment("codex"),
             )
         except (FileNotFoundError, subprocess.TimeoutExpired) as error:
             raise SkillAssessmentUnavailable(f"isolated Codex assessment is unavailable: {error}") from error
@@ -151,7 +151,7 @@ def assess_with_claude(candidate: SkillCandidate, executable: str = "claude", ti
     ]
     try:
         result = subprocess.run(command, cwd=tempfile.gettempdir(), check=False, stdout=subprocess.PIPE,
-                                stderr=subprocess.PIPE, text=True, timeout=timeout_seconds)
+                                stderr=subprocess.PIPE, text=True, timeout=timeout_seconds, env=model_environment("claude"))
     except (FileNotFoundError, subprocess.TimeoutExpired) as error:
         raise SkillAssessmentUnavailable(f"isolated Claude assessment is unavailable: {error}") from error
     if result.returncode != 0:
@@ -163,7 +163,7 @@ def assess_with_claude(candidate: SkillCandidate, executable: str = "claude", ti
 
 
 def assess_with_copilot(candidate: SkillCandidate, executable: str = "copilot", timeout_seconds: int = 300) -> SkillAssessment:
-    environment = dict(os.environ)
+    environment = model_environment("copilot")
     environment.update({
         "GITHUB_COPILOT_PROMPT_MODE_EXTENSIONS": "false",
         "GITHUB_COPILOT_PROMPT_MODE_REPO_HOOKS": "false",
