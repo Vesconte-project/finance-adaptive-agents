@@ -209,6 +209,24 @@ than relying on provider-specific persisted sessions. Codex
 uses ephemeral read-only structured execution; Claude uses safe mode with tools, Skills,
 custom instructions, sessions, and MCP disabled; Copilot uses programmatic silent mode with
 custom instructions, built-in MCP, experimental features, and available tools disabled.
+Independent selection, authorship and assessment processes use the normal per-user
+login of the chosen CLI, regardless of whether Team Skills was launched from a
+terminal, Codex, Claude, Copilot, T3 Code or another host. Caller session identifiers,
+Claude's nested-session marker, and ambient `CODEX_HOME`, `CLAUDE_CONFIG_DIR` and
+`COPILOT_HOME` are not forwarded. This is a fixed launch policy, not host detection
+or an authentication retry. The parent environment and onboarding/install destinations
+are unchanged. Explicit API credentials, endpoint overrides and network settings
+continue to be passed to the chosen CLI.
+
+For an intentional custom selector login, set the corresponding process-local
+preference: `TEAM_SKILLS_CODEX_HOME`, `TEAM_SKILLS_CLAUDE_CONFIG_DIR` or
+`TEAM_SKILLS_COPILOT_HOME` to an absolute CLI home (a leading `~` is expanded).
+This is also the migration path for callers that previously relied on an ambient
+native home override to choose their selector account. It applies only to model
+subprocesses; never commit these preferences or credentials into consumer state.
+An unavailable explicitly selected home fails normally; Team Skills never copies
+credentials, tries another home after failure, or substitutes another provider.
+
 Malformed Copilot text gets at most one serialization-only retry. Provider unavailability is
 reported; one provider is never silently substituted for another.
 
