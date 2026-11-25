@@ -126,6 +126,11 @@ def test_canonical_skill_catalog_is_safe_and_portable():
         ),
         ("topic-investigation-depth", "topic-investigation-depth", "active"),
         (
+            "vendor-presentation-first-principles",
+            "vendor-presentation-first-principles",
+            "active",
+        ),
+        (
             "vercel-cloudflare-production-surface",
             "vercel-cloudflare-production-surface",
             "active",
