@@ -86,6 +86,11 @@ Para cada PR entregue:
 Uma afirmação como "a suite local tem 3 falhas iguais à base" é para confirmar ou anotar, não
 para ignorar.
 
+Antes de lançar uma unidade que escolhe uma ferramenta, um fornecedor ou um desenho difícil de
+desfazer, aplica a Skill `prior-art-before-design` (ou faz tu essa pesquisa e passa o resultado
+no pedido). A primeira proposta de um agente que raciocina do zero muda muitas vezes depois de
+ver o que os outros já fazem.
+
 ## 5. Contas de modelo que esgotam
 
 - Segue a ordem de contas que o dono definiu; muda para a seguinte só com um sinal de
@@ -102,12 +107,26 @@ para ignorar.
 - Contas que voltam a ter créditos podem esgotar de novo a meio: um pedido bem escrito deixa
   o trabalho recuperável (PR aberto cedo, registo no fim de cada fase).
 
+## 5.1 Pedidos vindos de outro agente
+
+Alguns agentes recusam começar quando o pedido não vem diretamente do dono, mesmo com a
+autorização citada e o registo indicado. Quando o ambiente for assim, avisa o dono ao lançar
+(«confirma no fio do agente»), ou usa uma conta que o dono autorizou e que não exige essa
+confirmação. Não tentes contornar a recusa com texto mais insistente.
+
+## 5.2 Plataforma temporária
+
+Se o dono diz que a máquina é temporária, não instales nem extraias software em locais
+avulsos. Usa imagens de contentor e o repositório, documenta o que fica no host (caminhos,
+imagens, unidades, retenção de cópias) e como desinstalar sem perder cópias.
+
 ## 6. Agentes mortos e reservas presas
 
 Se o ambiente regista reservas ou checkouts por agente, uma reserva cuja sessão morreu continua
 reservada. Não a adoptes nem apagues o checkout sem o procedimento de recuperação do ambiente.
 Relança com uma identidade nova (por exemplo `…/r2`) e diz ao novo agente que não toque na
-antiga. Sem registo, usa pelo menos um ramo novo e não reutilizes o diretório do agente morto.
+antiga. Se o agente morto deixou trabalho por gravar, o novo pode lê-lo (diff e ficheiros, só
+leitura), rever e portar o que estiver bem para o seu próprio checkout. Sem registo, usa pelo menos um ramo novo e não reutilizes o diretório do agente morto.
 Lista o que ficou preso no relatório para o dono.
 
 ## 7. Relatório para o dono

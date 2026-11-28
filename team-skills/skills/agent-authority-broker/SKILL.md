@@ -9,7 +9,7 @@ A pergunta que esta Skill muda: "um agente com instruções injetadas consegue f
 resposta só é "não" quando o agente não chega à credencial nem ao efeito por outro caminho. Um
 prompt, um perfil ou um botão de aprovação não são fronteiras.
 
-**Evidência.** Desenho e implementação em oito fases numa plataforma de agentes local
+**Evidência.** Desenho e implementação em onze fases numa plataforma de agentes local
 (Paperclip, PostgreSQL, Docker no WSL), 2026-11, com cinco hipóteses de segurança testadas.
 Ver [references/achados-2026-11.md](references/achados-2026-11.md).
 
@@ -52,12 +52,53 @@ Antes de chamar a uma garantia "imposta", verifica no ambiente real, com as sond
 - A credencial de subscrição montada num contentor pode trazer tokens OAuth de outros serviços.
   Monta um ficheiro derivado mínimo, gerado no host com modo 0600.
 - A conta de máquina que publica PRs pode também fazer merge se as regras do ramo não o
-  impedirem. Confirma; é a primeira coisa a fechar.
+  impedirem. Confirma. Em repositórios privados, as regras do ramo podem exigir um plano pago
+  do fornecedor; sem elas, o merge só fica impedido para quem não tem ferramenta de merge
+  (agentes em contentor) e é cooperativo para quem tem o token.
 - Workflows de CI podem expor segredos a PRs de ramos internos: um push do agente corre código
   com esses segredos. Alterações à definição da CI (no GitHub, `.github/**`) passam a exigir aprovação.
 - A chave de assinatura do humano não pode estar ao alcance dos agentes (não reutilizar a chave
-  SSH pessoal); preferir FIDO com presença física. Sem chave dedicada configurada, as operações
-  que pedem aprovação ficam em espera com um erro claro.
+  SSH pessoal). Sem verificador configurado, as operações que pedem aprovação ficam em espera
+  com um erro claro. Ver «Aprovação humana» abaixo antes de pedir hardware.
+
+## Aprovação humana: pergunta onde está o verificador
+
+A pergunta útil não é «quem tem a chave», é «onde corre a verificação e quem a consegue
+alterar». No mesmo host, um agente com o UID do dono consegue trocar a lista de chaves aceites,
+por isso uma chave de hardware não fecha esse buraco. Contra agentes em contentor, qualquer
+verificador fora do contentor chega.
+
+- Preferir um canal fora de banda que o dono já usa (padrão CIBA: o pedido chega ao telemóvel e
+  é aprovado lá) a comprar hardware.
+- **Nenhum modelo pode transportar a aprovação.** Se um assistente com IA envia a notificação e
+  lê a resposta, um assistente manipulado repete o código. A prova tem de ser o evento
+  autenticado pelo fornecedor (por exemplo um webhook assinado), verificado por código sem
+  modelo, do remetente esperado.
+- A resposta leva um código curto derivado do digest, do id da operação e do epoch, com
+  validade e uso único. «Sim» sem código não conta.
+- Um canal ligado à conta pessoal do dono (sessão tipo QR) permite ao assistente responder
+  como o dono: retira esse acesso ou usa outro número como aprovador.
+
+## Custódia: o cofre não é a fronteira
+
+- Quem se autentica no cofre lê os segredos. O broker é o **único** cliente do cofre; os agentes
+  recebem capacidades, nunca segredos. Exceção: uma credencial de curta duração e âmbito mínimo
+  para uma execução concreta, emitida e registada pelo broker.
+- Preferir um cofre alojado a um que a equipa tem de manter. Verificar a região da conta (um
+  servidor por omissão errado devolve `invalid_client`).
+- Nunca passar valores secretos em argumentos de comandos: outros processos do mesmo
+  utilizador leem-nos. Passa por nome de variável de ambiente ou stdin.
+- Para o que é grave (banco, produção), a última barreira deve ser do fornecedor: tokens só de
+  leitura, confirmação forte no próprio serviço.
+
+## Um broker, dois tipos de cliente
+
+Agentes interativos (pedidos diretos do dono num harness) e agentes de uma pipeline são o mesmo
+problema. O broker serve ambos como proxy MCP: emite um token de sessão ligado a um perfil e a
+um mandato, aplica uma lista fechada de ferramentas por ligação e encaminha as escritas pelos
+executores existentes. O que muda entre eles é o perfil, não o mecanismo. Enquanto os agentes
+interativos correrem com o UID do dono (ou no grupo `docker`), continuam cooperativos: o passo
+seguinte é corrê-los em contentor e, por fim, dar as credenciais a outro utilizador ou máquina.
 
 ## Ordem de implementação que funcionou
 
@@ -73,6 +114,8 @@ Recomendação a partir de um caso, não sequência obrigatória.
    host; recibo com o SHA remoto verificado.
 5. Aprovações assinadas. 6. Fechar a passagem direta (gateway só para o broker, lista de rotas,
    credenciais mínimas, testes de fuga). 7. Outras escritas. 8. Migração com epoch.
+9. Aprovação por canal fora de banda autenticado pelo fornecedor. 10. Proxy MCP para sessões
+   interativas. 11. Credenciais do broker vindas de um cofre alojado.
 
 Cada fase entrega algo verificável e não alarga a confiança antes de a anterior estar provada.
 
