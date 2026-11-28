@@ -39,6 +39,7 @@ def test_canonical_skill_catalog_is_safe_and_portable():
     )
 
     assert [(skill.id, skill.name, skill.state) for skill in catalog.skills] == [
+        ("agent-authority-broker", "agent-authority-broker", "active"),
         ("agent-operating-agreement", "agent-operating-agreement", "active"),
         (
             "availability-holds-from-provider-signals",
@@ -89,6 +90,7 @@ def test_canonical_skill_catalog_is_safe_and_portable():
         ("openssh-socket-activation-listeners", "openssh-socket-activation-listeners", "active"),
         ("orchestrator-runtime-ops", "orchestrator-runtime-ops", "active"),
         ("organization-resource-authorization", "organization-resource-authorization", "active"),
+        ("overnight-agent-orchestration", "overnight-agent-orchestration", "active"),
         (
             "postgres-logical-restore-proofs",
             "postgres-logical-restore-proofs",
