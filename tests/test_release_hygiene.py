@@ -97,6 +97,7 @@ def test_canonical_skill_catalog_is_safe_and_portable():
             "active",
         ),
         ("prefect-self-hosted-operations", "prefect-self-hosted-operations", "active"),
+        ("prior-art-before-design", "prior-art-before-design", "active"),
         ("private-research-artifact-access", "private-research-artifact-access", "active"),
         ("privilege-boundaries-ci-runner", "privilege-boundaries-ci-runner", "active"),
         (

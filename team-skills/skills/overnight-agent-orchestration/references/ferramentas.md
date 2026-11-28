@@ -17,3 +17,13 @@ estação). Não são universais: confirma no teu ambiente e usa só os que corr
   com repositório, ramo, commit, PR e estado da CI.
 - **Ferramenta de estado de tarefas delegadas** pode exigir o identificador completo do nó
   (`node:delegated-task:…`), não só o UUID final.
+- **Pedido vindo de outro agente recusado.** Agentes de algumas contas recusam começar quando
+  o pedido vem de outro agente, mesmo com a autorização do dono citada, e pedem confirmação no
+  próprio fio. Avisa o dono no momento do lançamento, não depois da recusa.
+- **`docker pull` no WSL com «error getting credentials»**: o `credsStore` aponta para o
+  Docker Desktop do Windows. Para imagens públicas usa um `DOCKER_CONFIG` temporário com `{}`;
+  não alteres a configuração do utilizador.
+- **Login OAuth de uma CLI no WSL**: o browser do Windows pode não alcançar o retorno em
+  `127.0.0.1` do WSL. Com a CLI à espera, reenvia de dentro do WSL o endereço de retorno que o
+  dono colar (código de uso único, expira depressa).
+- **«Não está instalado»** só depois de confirmar que uma imagem Docker já não resolve.
