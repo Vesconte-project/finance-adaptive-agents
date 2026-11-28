@@ -28,15 +28,21 @@ The article does not define capital expenditure.
 
 **Observed: the platform's own mapping.** The platform mapped filing capital expenditure only to `PaymentsToAcquirePropertyPlantAndEquipment`. A concept for intangible-asset purchases existed in its mapping code but was not published. Capitalized software and intangible purchases are separate cash-flow lines in many filings.
 
-**Hypotheses, not yet tested.**
+**Hypotheses before the reconstruction.**
 - The aggregator's capital expenditure is approximately property and equipment, plus capitalized software, plus intangible purchases.
 - The aggregator's operating income is approximately reported operating income plus stock-based compensation, plus some one-off items.
 
-Reconstructing these on filing data was requested and had not run when this was written. A good match would support these explanations without proving the vendor's method.
+**Observed: the reconstruction (internal measurement, 25 November 2026, about 74 issuers with annual pairs).** "Agrees" means a difference below 5%.
+- **Capital expenditure.** Property and equipment alone agreed on 240 of 293 pairs. Adding capitalized software and intangible purchases raised that to 264: 25 pairs fixed, 1 broken. This supports the first hypothesis without proving the vendor's method. Only 5 of those issuers reported software, so the overlap between lines could not be measured.
+- **Operating income.** The filing figure alone already agreed on 193 of 294 pairs, with a median residual of 1.2%. Adding stock-based compensation made agreement *worse*: 121 pairs with the income-statement amount, 105 with the cash-flow amount. Restructuring and goodwill impairment fixed 20 pairs and broke 6. On this data the vendor's own documentation did not explain the gaps. About 80 pairs remain unexplained and stay unknown.
+- **Interest.** The filing figure alone agreed on 152 of 185 pairs. Every variant tested, net of interest income or cash interest paid, made agreement worse.
+- **Methodology change.** The platform's archive of vendor data began only months before the measurement and showed no bulk revision, so the change described in the documentation could not be dated.
 
-**Assessment of each vendor reason, pending the reconstruction.**
-- *Reinvestment that includes software and intangibles:* sound for the question "how much the business must reinvest". Many software companies subtract capitalized software in their own free-cash-flow definition. Recommendation: build it from the filing lines, with the composition visible.
-- *Stock-based compensation excluded from operating income:* debatable, because it is a real recurring cost. Recommendation: show the reported figure and make the excluded part visible.
+The lesson for step 2: a vendor's documentation says what its methodology intends. It does not show how that methodology affects a given archive. Test the documented reason; do not assume it.
+
+**Assessment of each vendor reason after the reconstruction.**
+- *Reinvestment that includes software and intangibles:* sound for the question "how much the business must reinvest", and supported by the data. Many software companies subtract capitalized software in their own free-cash-flow definition. Recommendation: build it from the filing lines, with the composition visible, and add a line only when it is a separate line on the same cash-flow statement.
+- *Stock-based compensation excluded from operating income:* debatable, because it is a real recurring cost, and not what explained the gaps here. Recommendation: show the reported figure, with stock-based compensation, restructuring and impairments beside it as named items.
 
 **Illustrative candidate for "how much cash is left for owners", pending reconciliation.** Operating cash flow, minus reinvestment (property and equipment, capitalized software, intangible purchases), with stock-based compensation shown as an economic cost. It is not a universal formula. Before adopting it for an issuer:
 - **Check for overlap between the reinvestment lines.** Some filers already include capitalized software in the property-and-equipment purchases line, and adding it again would count it twice.
